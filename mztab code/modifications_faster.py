@@ -12,22 +12,13 @@ parser.add_argument('unimod_path', type=str)
 parser.add_argument('tol_py_csv', type=pathlib.Path)
 args = parser.parse_args()
 
-# path = "/Users/adams/Documents/master/master 2/Stage en thesis/Data/proteasoom subnetwerk/"
-# path = "/Users/adams/Documents/master/master 2/Stage en thesis/Data/ANN-Solo runs/26.11.2019/"
-# unimod_path = "/Users/adams/Documents/master/master 2/Stage en thesis/Data/unimod/unimod_py.csv"
-# name = "j7608_C16orf70"
-
 output_path = args.bait + '.csv'
-# output_path = path + 'mod/' + name + '.csv'
-# input_path = path + 'tol_py/' + name + '.csv'
 
 #   load unimod file:
 unimod = pd.read_csv(args.unimod_path)
-# unimod = pd.read_csv(unimod_path)
 
 #   load psm file
 psms_modified = pd.read_csv(args.tol_py_csv)
-# psms_modified = pd.read_csv(input_path)
 
 mod_names, mod_masses = [], []
 
