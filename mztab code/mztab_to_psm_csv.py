@@ -9,15 +9,8 @@ parser.add_argument('mztab', type=pathlib.Path)
 parser.add_argument('bait', type=str)
 args = parser.parse_args()
 
-# path = "/Users/adams/Documents/master/master 2/Stage en thesis/Data/sars_cov_2/peptideIndexer/"
-# name = "AGK--_-_Partition_49_of_200"
-# split = name.split("_")
-# bait = split[1]
-# split = name.split("--")
-# bait = split[0]
-# input_path = path + 'mztab/' + bait + '.mztab'
-
-# output_path = path + 'csv/' + args.bait + '.csv'
+# path = '/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/'
+# output_path = path + 'csv/psm/' + args.bait + '.csv'
 output_path = args.bait + '.csv'
 
 with open (args.mztab,'r') as f:
