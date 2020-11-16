@@ -10,7 +10,7 @@ inputs:
     bait: string
     mass_tolerance:
         type: string
-        default: "50"
+        default: "20"
     modifications_faster_py: File
     unimod_path: string
 
@@ -18,10 +18,7 @@ outputs:
     mod_csv:
         type: File
         outputSource: modifications_faster/mod_csv
-#    tibble:
- #       type: File
-  #      outputSource: modifications_fast/tibbles
-
+        
 steps:
     mztab_to_csv:
         run: Tools/mztab_to_csv.cwl
