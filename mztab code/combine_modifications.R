@@ -1,14 +1,9 @@
 library(tidyverse)
 
-#args <- commandArgs(trailingOnly = TRUE)
-#path <- args[1]
-
-# path <- "/Users/adams/Documents/master/master 2/Stage en thesis/Data/ANN-Solo runs/preliminary/modifications"
-path <- "/Users/adams/Documents/master/master 2/Stage en thesis/Data/sars_cov_2//modifications"
+path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/modifications"
 
 setwd(path)
 files <- dir(pattern = "*.csv")
-
 pre_data <- files %>%
     map(read_csv) %>%       # read in all the files individually, using
                             # the function read_tsv() from the readr package
@@ -32,6 +27,8 @@ pre_data %>% as_tibble %>% add_count(mod) %>% arrange(desc(n)) %>% select(mod,n)
     # filter(!str_detect(mod, "Formyl")) %>%
     # filter(!str_detect(mod, "Ammonium")) %>%
     unique() %>% filter(n > 1000) %>% print(n = 40) %>% pull(mod) 
+
+pre_data %>% filter(str_detect(mod, "Gluratylation"))
 
 #   create bar plot with most prevalent modifications
 mod_1 <- pre_data %>% as_tibble %>% filter(!str_detect(mod, "Deamidation_O18")) %>% filter(str_detect(mod, "Deamidation")) %>% mutate(modification = "Deamidation")
