@@ -64,7 +64,7 @@ intact_gene <- intact_G %>%
     select(idBait, gene_name, everything()) %>%
     unite(BP, idBait:gene_name,sep ="_", remove=FALSE)
 
-#   create plot with overlap
+#   Create plot with overlap
 ann <- combined_gene %>% filter(!BP %in% intact_gene$BP) %>% select(idBait, BP) %>% mutate(Identification = "ANN-SoLo")
 gordon <- intact_gene %>% filter(!BP %in% combined_gene$BP) %>% select(idBait, BP) %>% mutate(Identification = "Gordon et al.")
 both <- combined_gene %>% filter(BP %in% intact_gene$BP) %>% select(idBait, BP) %>% mutate(Identification = "Overlap")
@@ -79,22 +79,6 @@ s <- ggplot(comb, aes(idBait, fill = Identification)) +
     theme(axis.text.x = element_text(size=10, angle=90))
 
 ggsave("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/HCIP/HCIP overlap.png", s,width = 24, height = 9, units = "cm")
-
-# #   create plot with overlap accession
-# ann <- combined_result %>% filter(!BP %in% intact_result$BP) %>% mutate(identification = "ANN-SoLo") %>% select(idBait, BP, identification)
-# gordon <- intact_result %>% filter(!BP %in% combined_result$BP) %>% mutate(identification = "Gordon et al.") %>% select(idBait, BP, identification)
-# both <- combined_result %>% filter(BP %in% intact_result$BP) %>% mutate(identification = "Overlap") %>% select(idBait, BP, identification)
-
-# comb <- rbind(ann, gordon, both)
-
-# s <- ggplot(comb, aes(idBait, fill = identification)) +
-#     geom_bar(position = "stack") +
-#     theme_minimal() +
-#     labs(title ="HCIP overlap", x = "baits", y = "number of identifications") + 
-#     scale_fill_manual(values=c("#071E22", "#849B96", "#377563")) +
-#     theme(axis.text.x = element_text(size=10, angle=90))
-
-# ggsave("/Users/adams/Documents/master/master 2/Stage en thesis/Reports/Figures/HCIP overlap.png", s,width = 22, height = 9, units = "cm")
 
 ################################################################################################################################################
 combined_nsp5 <- combined_gene %>% filter(idBait == "nsp5") 
@@ -144,27 +128,30 @@ nrow(combined_result)/nrow(intact_result) -1
 nrow(combined_gene)/nrow(intact_gene) -1
 
 ################################################################################################################################################
-#   write gene names to files, to color the nodes in network
+#   Write gene names to files, to color the nodes in network
+combined_genes <- combined_gene %>% select(idBait, BP, PreyGene) %>% unique()
 
-ann <- combined_gene %>% filter(!BP %in% intact_gene$BP) %>% mutate(identification = "ANN-SoLo") %>% select(idBait, BP, identification, PreyGene)
-gordon <- intact_gene %>% filter(!BP %in% combined_gene$BP) %>% mutate(identification = "Gordon et al.") %>% 
+ann <- combined_genes %>% filter(!BP %in% intact_gene$BP) %>% mutate(identification = "ANN-SoLo") %>% unique()
+gordon <- intact_gene %>% filter(!BP %in% combined_genes$BP) %>% mutate(identification = "Gordon et al.") %>% 
     mutate(PreyGene = gene_name) %>%
-    select(idBait, BP, PreyGene)
-both <- combined_gene %>% filter(BP %in% intact_gene$BP) %>% mutate(identification = "Overlap") %>% select(idBait, BP, identification, PreyGene)
+    select(idBait, BP, PreyGene) %>% unique()
+both <- combined_genes %>% filter(BP %in% intact_gene$BP) %>% mutate(identification = "Overlap") %>% unique()
 
 both_gene <- both %>% select(PreyGene) %>% unique()
 ann_gene <- ann %>% select(PreyGene) %>% unique()
 gordon_gene <- gordon %>% select(PreyGene) %>% unique()
+bait_gene <- combined_genes %>% select(idBait) %>% unique()
 
-output_path <- "/Users/adams/Documents/master/master 2/Stage en thesis/Data/sars_cov_2/HCIP/both_gene.csv"
+output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/Network/both_gene.csv"
 fwrite(both_gene, output_path, append = FALSE, col.names = TRUE)
-output_path <- "/Users/adams/Documents/master/master 2/Stage en thesis/Data/sars_cov_2/HCIP/ann_gene.csv"
+output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/Network/ann_gene.csv"
 fwrite(ann_gene, output_path, append = FALSE, col.names = TRUE)
-output_path <- "/Users/adams/Documents/master/master 2/Stage en thesis/Data/sars_cov_2/HCIP/gordon_gene.csv"
+output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/Network/gordon_gene.csv"
 fwrite(gordon_gene, output_path, append = FALSE, col.names = TRUE)
+output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/Network/baits.csv"
+fwrite(bait_gene, output_path, append = FALSE, col.names = TRUE)
 
-gordon_combined_genes <- rbind(combined_gene, gordon)
-output_path <- "/Users/adams/Documents/master/master 2/Stage en thesis/Data/sars_cov_2/HCIP/gordon_combined_genes.csv"
+#   Save file that contains both the ANN-SoLo as the Gordon et al results to put into a network
+gordon_combined_genes <- rbind(combined_genes, gordon)
+output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/Network/ann_gordon_gene.csv"
 fwrite(gordon_combined_genes, output_path, append = FALSE, col.names = TRUE)
-
-gordon %>% pull(idBait) %>% unique
