@@ -7,7 +7,7 @@ setwd(path)
 files <- dir(pattern = "*.csv")
 psm_csv <- files %>%
     map(read_csv) %>%       # read in all the files individually, using
-                            # the function read_tsv() from the readr package
+                            # the function read_csv() from the readr package
     reduce(rbind)           # reduce with rbind into one dataframe
 
 path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/csv/psm"
@@ -24,7 +24,7 @@ setwd(path)
 files <- dir(pattern = "*.csv")
 mod_data <- files %>%
     map(read_csv) %>%       # read in all the files individually, using
-                            # the function read_tsv() from the readr package
+                            # the function read_csv() from the readr package
     reduce(rbind) %>%       # reduce with rbind into one dataframe
     select(bait, mod, mod_mass, mass_diff, everything())
 
@@ -77,13 +77,15 @@ hcip_mod <- merge(BP_psm_mod, BP_hcip, by="BPAccession") %>% as_tibble
 #   How many PSMs belong to a HCIP
 hcip_psm <- merge(BP_psm, BP_hcip, by="BPAccession") %>% as_tibble
 
-hcip_mod %>% filter(BP == "orf8_ADAM15") %>% select(Spec, bait.x)
-hcip_psm %>% filter(BP == "orf8_ADAM15") %>% select(Spec, bait)
-hcip_mod %>% filter(BP == "orf8_ADAM15") %>% select(mod, mass_diff)
+hcip_mod %>% filter(BP == "nsp11_COG2") %>% select(Spec, bait.x, sequence.x) %>% unique
+hcip_psm %>% filter(BP == "nsp11_COG2") %>% select(Spec, bait)
+hcip_mod %>% filter(BP == "nsp11_COG2") %>% select(mod, mass_diff, sequence.x)# %>% 
+    #mutate(mass_diff = round(mass_diff)) %>% unique
 
-hcip_mod %>% filter(BP == "nsp13_TBK1") %>% select(Spec, bait.x)
-hcip_psm %>% filter(BP == "nsp13_TBK1") %>% select(Spec, bait)
-hcip_mod %>% filter(BP == "nsp13_TBK1") %>% select(mod, mass_diff, sequence.x) %>% arrange(mass_diff)
+hcip_mod %>% filter(BP == "orf9b_TOMM70") %>% select(Spec, bait.x)
+hcip_psm %>% filter(BP == "orf9b_TOMM70") %>% select(Spec, bait)
+hcip_mod %>% filter(BP == "orf9b_TOMM70") %>% select(mod, mass_diff, sequence.x) %>% arrange(mass_diff) %>% print(n=30)
+hcip_mod %>% filter(BP == "orf9b_TOMM70") %>% count(mod) %>% arrange(desc(n)) %>% print(n=50)
 
 hcip_psm %>% filter(BP == "orf3b_STOML2") %>% count(bait)
 hcip_psm %>% filter(BP == "orf3b_STOML2", bait=="qx017172") %>% 
@@ -96,7 +98,10 @@ BP_nomod <- BP_hcip %>% filter(!BPAccession %in% hcip_mod$BPAccession)
 hcip_mod %>% filter(Condition == "nsp8") %>% count(mod) %>% arrange(desc(n)) %>% print(n=120) 
 hcip_mod %>% filter(Condition == "nsp13") %>% 
     filter(mod == "Sulfation / Phospho") %>%
-    select(mod,PreyGene,sequence.x, retention_time, bait.x) %>% arrange(PreyGene) %>% pull(retention_time)
+    select(mod,Prey.x,PreyGene,sequence.x, PSM_ID) %>% arrange(PreyGene) %>% unique
+hcip_mod %>% filter(Condition == "N") %>%
+    filter(mod == "Sulfation / Phospho") %>%
+    select(Prey.x,PreyGene,sequence.x, PSM_ID) %>% arrange(PreyGene) %>% unique
 
 ################################################################################################################################################
 
@@ -105,17 +110,17 @@ SARS_psms <- psm_annotations %>%
     separate(accession, into=c("pre","name","post","twee","prot")) %>% 
     filter(name=="SARS") %>%
     mutate(prot=str_replace(prot,"Protein14", "orf9c(protein14)")) %>%
-    filter(prot==Condition)
+    filter(str_detect(Condition, prot))     #So nsp5 is matched to nsp5 and nsp5_C145A
 SARS_mod <- psm_mod_annotation %>% 
     separate(accession, into=c("pre","name","post","twee","prot")) %>% 
     filter(name=="SARS") %>%
     mutate(prot=str_replace(prot,"Protein14", "orf9c(protein14)")) %>%
-    filter(prot==Condition)
+    filter(str_detect(Condition, prot))
 
 #   Look at modifications per SARS-CoV-2 protein
 SARS_mod %>% count(prot) %>% arrange(desc(n)) %>% print(n=30)
 SARS_mod %>% filter(prot == "Protein14") %>% select(sequence.x, mod)
-SARS_mod %>% filter(prot == "N") %>% select(sequence.x, mod) %>% unique
+SARS_mod %>% filter(mod == "Sulfation / Phospho") %>% select(Condition, sequence.x, PSM_ID) %>% unique
 
 SARS_mod %>% mutate(round_mass=round(mass_diff, 2)) %>%
     add_count(round_mass) %>% 
