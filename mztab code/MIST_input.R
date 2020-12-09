@@ -29,3 +29,7 @@ fwrite(inputFile, input_output, sep= "\t", col.names=TRUE)
 ##########################################################################################################################################
 
 # After this two extra lines need to be added and all the "hash" need to be replaced by "#"
+
+# https://modbase.compbio.ucsf.edu/mist/
+
+# HIV trained and no singleton filtering
