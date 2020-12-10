@@ -63,6 +63,38 @@ plt.close()
 
 #########################################################################################################################################################
 
+#	Mirror plot
+
+spectra = []
+for spectrum_dict in mgf.read('/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mgf/qx017106.mgf'):
+	if 'scan=15915' in spectrum_dict['params']['title']:
+		identifier = spectrum_dict['params']['title']
+		precursor_mz = spectrum_dict['params']['pepmass'][0]
+		precursor_charge = spectrum_dict['params']['charge'][0]
+		mz = spectrum_dict['m/z array']
+		intensity = spectrum_dict['intensity array']
+		retention_time = float(spectrum_dict['params']['rtinseconds'])
+		peptide = 'GQGVPINTNSSPDDQIGYYR'
+		modifications = {10: 79.966331}
+		
+		# Create the MS/MS spectrum.
+		spectra.append(sus.MsmsSpectrum(identifier, precursor_mz,
+										precursor_charge, mz, intensity,
+										retention_time=retention_time,
+										peptide=peptide,
+										modifications=modifications)
+					   .filter_intensity(0.01, 50)
+					   .scale_intensity('root')
+					   .annotate_peptide_fragments(0.5, 'Da', ion_types='aby'))
+
+fig, ax = plt.subplots(figsize=(12, 6))
+spectrum_top, spectrum_bottom = spectra
+sup.mirror(spectrum_top, spectrum_bottom, ax=ax)
+plt.show()
+plt.close()
+
+#########################################################################################################################################################
+
 spectra = []
 for spectrum_dict in mgf.read('/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mgf/qx017106.mgf'):
 	if 'scan=15952' in spectrum_dict['params']['title']:
