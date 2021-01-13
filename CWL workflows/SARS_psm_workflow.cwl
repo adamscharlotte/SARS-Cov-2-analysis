@@ -14,7 +14,7 @@ inputs:
         default: "silent"
     enzyme_specificity:
         type: string
-        default: "semi"
+        default: "full"
     IL_equivalent:
         type: boolean
         default: TRUE
