@@ -40,11 +40,11 @@ fwrite(SAINT_MIST_filtered, "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/
 #   load original Gordon et al. results
 Gordon <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/HCIP/AP-MS/Gordon/intact_gordon.txt", sep= "\t") %>% as_tibble
 Gordon_map <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results//HCIP/AP-MS/Gordon/name_map_sars_cov_2.txt", sep= "\t")
-Gordon_annot <- merge(intact, intact_map, by.x = "IDinteractorA", by.y = "accession") %>% as_tibble
+Gordon_annot <- merge(Gordon, Gordon_map, by.x = "IDinteractorA", by.y = "accession") %>% as_tibble
 
 #   remove space in protein14 (bait)
-Gordon_annot$idBait <- gsub(" ", "", intact_annot$idBait)
-Gordon_gene <- merge(intact_annot, gene_names, by.x = "IDinteractorB", by.y = "V2") %>% as_tibble
+Gordon_annot$idBait <- gsub(" ", "", Gordon_annot$idBait)
+Gordon_gene <- merge(Gordon_annot, gene_names, by.x = "IDinteractorB", by.y = "V2") %>% as_tibble
 
 Gordon_result <- Gordon_gene %>% mutate(Prey = IDinteractorB) %>% mutate(PreyGene = gene_name) %>%
 	select(idBait, Prey, everything()) %>% unite(BP, idBait:Prey, sep ="_", remove=FALSE) %>%
@@ -162,27 +162,58 @@ Gordon_output <- Gordon %>% separate(Bait, into=c("x", "idBait"), sep=" ") %>%
 	mutate(BFDR = Saint_BFDR) %>% mutate(MiST = MIST) %>% mutate(Prey = Preys) %>%
 	select(idBait, Prey, everything()) %>% unite(BP, idBait:Prey, sep ="_", remove=FALSE) %>%
 	select(idBait, PreyGene, everything()) %>% unite(BP_gene, idBait:PreyGene, sep ="_", remove=FALSE)
-Gordon_filtered <- Gordon_output %>% filter(MiST >= 0.7 & BFDR <= 0.05 & AvgSpec >= 2)
+Gordon_filtered <- Gordon_output %>% filter(BP_gene %in% Gordon_result$BP_gene)
 
 #	Plot the MiST scoring against the BFDR
-Gordon_input <- Gordon_output %>% mutate(MiST_Gordon = MiST) %>% mutate(BFDR_Gordon = BFDR) %>% select(BP_gene, idBait, PreyGene, Prey, MiST_Gordon, BFDR_Gordon)
-ANNSoLo_input <- SAINT_MIST %>% mutate(MiST_ANNSoLo = MiST) %>% mutate(BFDR_ANNSoLo = BFDR) %>% select(BP_gene, idBait, PreyGene, Prey, MiST_ANNSoLo, BFDR_ANNSoLo)
-Plot_input <- merge(Gordon_input, ANNSoLo_input) %>% as_tibble
+Gordon_input <- Gordon_output %>% mutate(MiST_Gordon = MiST) %>% mutate(BFDR_Gordon = BFDR) %>%
+	filter(BP %in% Gordon_result$BP) %>% select(BP_gene, BP, idBait, PreyGene, Prey, MiST_Gordon, BFDR_Gordon)
+ANNSoLo_input <- SAINT_MIST %>% mutate(MiST_ANNSoLo = MiST) %>% mutate(BFDR_ANNSoLo = BFDR) %>%
+	filter(BP %in% SAINT_MIST_filtered$BP) %>% select(BP_gene, BP, idBait, PreyGene, Prey, MiST_ANNSoLo, BFDR_ANNSoLo)
+Gordon_add_input <- Gordon_output %>% mutate(MiST_Gordon = MiST) %>% mutate(BFDR_Gordon = BFDR) %>%
+	filter(BP %in% Gordon_result$BP | BP %in% SAINT_MIST_filtered$BP) %>% select(BP_gene, BP, idBait, PreyGene, Prey, MiST_Gordon, BFDR_Gordon)
+ANNSoLo_add_input <- SAINT_MIST %>% mutate(MiST_ANNSoLo = MiST) %>% mutate(BFDR_ANNSoLo = BFDR) %>%
+	filter(BP %in% Gordon_result$BP | BP %in% SAINT_MIST_filtered$BP) %>% select(BP_gene, BP, idBait, PreyGene, Prey, MiST_ANNSoLo, BFDR_ANNSoLo)
+Plot_input <- merge(Gordon_add_input, ANNSoLo_add_input) %>% as_tibble
+Plot_input_label <- merge(Plot_input, comb) %>% as_tibble
 
-s <- ggplot(Plot_input, aes(MiST_Gordon, MiST_ANNSoLo)) +
-	geom_point(alpha = 0.2) +
+s <- ggplot(Plot_input_label, aes(MiST_Gordon, MiST_ANNSoLo, color=Identification)) +
+	geom_point(alpha = 0.7) +
 	theme_minimal() +
 	labs(title ="MiST scores of Gordon et al. plotted against those of ANN-SoLo", x = "MiST score Gordon et al.", y = "MiST score ANN-SoLo") + 
-	theme(axis.text.x = element_text(size=10, angle=90))
+	theme(axis.text.x = element_text(size=10, angle=90)) +
+	geom_hline(yintercept=0.7, linetype="dashed", color = "red") +
+	geom_vline(xintercept=0.7, linetype="dashed", color = "red") +
+	scale_color_manual(values=c("#071E22", "#849B96", "#377563"))
 ggsave(s, file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Explorative plots/MiST scores of Gordon et al. plotted against those of ANN-SoLo.pdf", width = 17, height = 17, units = "cm")
 
-s <- ggplot(Plot_input, aes(BFDR_Gordon, BFDR_ANNSoLo)) +
-	geom_point(alpha = 0.2) +
+s <- ggplot(Plot_input_filtered_label, aes(BFDR_Gordon, BFDR_ANNSoLo, color=Identification)) +
+	geom_point(alpha = 0.7) +
 	theme_minimal() +
 	labs(title ="SAINT BFDR scores of Gordon et al. plotted against those of ANN-SoLo", x = "BFDR Gordon et al.", y = "BFDR ANN-SoLo") + 
-	theme(axis.text.x = element_text(size=10, angle=90))
+	theme(axis.text.x = element_text(size=10, angle=90)) +
+	geom_hline(yintercept=0.05, linetype="dashed", color = "red") +
+	geom_vline(xintercept=0.05, linetype="dashed", color = "red") +
+	scale_color_manual(values=c("#071E22", "#849B96", "#377563"))
 ggsave(s, file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Explorative plots/SAINT BFDR scores of Gordon et al. plotted against those of ANN-SoLo.pdf", width = 17, height = 17, units = "cm")
+
+s <- ggplot(Gordon_input, aes(BFDR_Gordon, MiST_Gordon)) +
+	geom_point(alpha = 0.7) +
+	theme_minimal() +
+	labs(title ="SAINT BFDR and MiST scores of Gordon et al. plotted against each other", x = "BFDR", y = "MiST score") + 
+	theme(axis.text.x = element_text(size=10, angle=90)) +
+	geom_hline(yintercept=0.7, linetype="dashed", color = "red") +
+	geom_vline(xintercept=0.05, linetype="dashed", color = "red")
+ggsave(s, file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Explorative plots/SAINT BFDR and MiST scores of Gordon et al. plotted against each other.pdf", width = 17, height = 17, units = "cm")
+
+s <- ggplot(ANNSoLo_input, aes(BFDR_ANNSoLo, MiST_ANNSoLo)) +
+	geom_point(alpha = 0.7) +
+	theme_minimal() +
+	labs(title ="SAINT BFDR and MiST scores of ANN-SoLo plotted against each other", x = "BFDR", y = "MiST score") + 
+	theme(axis.text.x = element_text(size=10, angle=90)) +
+	geom_hline(yintercept=0.7, linetype="dashed", color = "red") +
+	geom_vline(xintercept=0.05, linetype="dashed", color = "red")
+ggsave(s, file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Explorative plots/SAINT BFDR and MiST scores of ANN-SoLo plotted against each other.pdf", width = 17, height = 17, units = "cm")
+
 
 Gordon_output %>% summarise(a = mean(MiST), b = mean(BFDR))
 SAINT_MIST %>% summarise(a = mean(MiST), b = mean(BFDR))
-
