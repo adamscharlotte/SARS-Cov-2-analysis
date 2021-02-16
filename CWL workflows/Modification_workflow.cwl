@@ -10,7 +10,7 @@ inputs:
     bait: string
     mass_tolerance:
         type: string
-        default: "20"
+        default: "10"
     modifications_faster_py: File
     unimod_path: string
 

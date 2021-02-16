@@ -10,8 +10,8 @@ parser.add_argument('bait', type=str)
 args = parser.parse_args()
 
 path = '/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/'
-output_path = path + 'csv/mztab/' + args.bait + '.csv'
-# output_path = args.bait + '.csv'
+# output_path = path + 'csv/mztab/' + args.bait + '.csv'
+output_path = args.bait + '.csv'
 
 with open (args.mztab,'r') as f:
     outF = open(output_path, 'w')
