@@ -19,7 +19,7 @@ csv <- files %>%
 	reduce(rbind)           # reduce with rbind into one dataframe
 
 #   Load modification data
-path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/modifications"
+path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/modifications_10ppm"
 setwd(path)
 files <- dir(pattern = "*.csv")
 mod_data <- files %>%
@@ -49,20 +49,6 @@ psm_annotations <- merge(psm_id, annotation, by.x = "bait", by.y = "fileID") %>%
 
 ################################################################################################################################################
 
-psm_annotations %>% filter(str_detect(Condition, "nsp5")) %>% 
-	filter(str_detect(accession, "D6RDZ1")) %>% select(sequence, PSM_ID) %>% print(n= 30)
-
-psm_mod_annotation %>% filter(str_detect(Condition, "nsp5")) %>% 
-	filter(str_detect(accession, "Q8N5T2")) %>%
-	select(sequence.x, PSM_ID, mass_diff) %>% unique %>% print(n=50)
-
-psm_mod_annotation %>% filter(Condition == "nsp5") %>% filter(str_detect(accession, "D6RA74")) %>% select(sequence.x, mass_diff, PSM_ID)
-# %>% filter(sequence.x == "IVGHYASYIK") %>% arrange(desc(mass_diff)) %>% pull(mass_diff)
-# %>% count(mass_diff) %>% arrange(desc(n)) %>% print(n=170)
-
-psm_annotations %>% filter(Condition == "nsp5_C145A") %>% filter(str_detect(accession, "Q460N5")) %>% select(sequence, PSM_ID)
-
-################################################################################################################################################
 #   Only select modifications present in reported HCIPs
 #   Load HCIP result file
 HCIP_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/HCIP/HCIPs.csv"
@@ -93,28 +79,26 @@ hcip_psm %>% filter(!BP_gene %in% hcip_mod$BP_gene) %>% select(BP_gene) %>% uniq
 hcip_psm %>% select(BP_gene, idBait) %>% filter(idBait == "nsp5"| idBait == "nsp5_C145A") %>% unique
 hcip_psm %>% filter(BP_gene == "nsp5_C145A_SORD") %>% select(Prey.x) %>% unique
 
-hcip_psm %>% filter(BP == "nsp5_Q6YN16") %>% select(Spec, sequence) %>% unique
-hcip_mod %>% filter(BP == "nsp5_C145A_Q6YN16") %>% select(mass_diff, sequence.x, PSM_ID) %>% arrange(mass_diff) %>% print(n=200)
+hcip_psm %>% filter(BP_gene == "orf8_CNNM3") %>% select(Spec, sequence) %>% unique
+hcip_mod %>% filter(BP_gene == "orf8_PLOD1") %>% select(mass_diff, sequence.x, PSM_ID, mod) %>% arrange(mass_diff) %>% print(n=200)
 hcip_mod %>% filter(BP == "nsp5_C145A_Q6YN16") %>% count(mod) %>% arrange(desc(n)) %>% print(n=50)
 
-BP_psm %>% filter(BPAccession == "nsp5_Q00796") %>% count(bait)
-BP_psm_mod %>% filter(BPAccession == "nsp5_Q00796") %>% select(mod, mass_diff, sequence.x, PSM_ID) %>% arrange(mass_diff) %>% print(n=200)
-%>% count(mod) %>% arrange(desc(n)) %>% print(n=50)
+hcip_mod %>% filter(BP_gene == "orf3a_MGAT1") %>% count(bait.x)
+hcip_psm %>% filter(BP_gene == "orf3a_MGAT1") %>% count(bait, BPAccession)
+hcip_psm %>% filter(BP_gene == "orf3a_MGAT1") %>% count(bait)
+select(sequence, bait)
+%>% select(Prey.x, BP_gene) %>% unique
+hcip_mod %>% filter(BP_gene == "orf3a_MGAT1") %>% select(mass_diff, mod, bait.x, sequence.x)
+BP_psm_mod %>% filter(BPAccession == "orf3a_P26572") %>% select(mass_diff, mod, bait.x, sequence.x)
+BP_psm %>% filter(BPAccession == "orf3a_P26572") %>% select(bait, sequence)
 
 #	Get non-modified peptides
 hcip_nonmod <- hcip_psm %>% filter(!PSM_ID %in% hcip_mod$PSM_ID)
 hcip_nonmod %>% filter(BP == "nsp5_C145A_Q9NXH9") %>% select(sequence, PSM_ID) %>% print(n=30)
 hcip_psm %>% filter(BP == "nsp5_C145A_Q9NXH9") %>% count(sequence)
-#   There are 23 BPAccessions that do not contain any PSMs with a modifications
-BP_nomod <- BP_hcip %>% filter(!BP_gene %in% hcip_mod$BP_gene)
 
-#   Look at modifications occurring in neighbourhood of certain SARS-CoV-2 protein
-hcip_mod %>% filter(Condition == "nsp5") %>% count(mod) %>% arrange(desc(n)) %>% print(n=120) 
-hcip_mod %>% filter(Condition == "nsp13") %>% filter(mod == "Sulfation / Phospho") %>%
-	select(mod,Prey.x,PreyGene,sequence.x, PSM_ID) %>% arrange(PreyGene) %>% unique
-
-hcip_mod %>% filter(Condition == "nsp5_C145A") %>% filter(mod == "No direct match found in Unimod") %>%
-	select(Prey.x, gene_name, sequence.x) %>% add_count(sequence.x) %>% unique
+#   There are 50 BPs that do not contain any PSMs with a modifications
+BP_nomod <- BP_hcip %>% filter(!BP_gene %in% hcip_mod$BP_gene) %>% select(BP_gene) %>% unique
 
 ################################################################################################################################################
 
@@ -122,39 +106,32 @@ hcip_mod %>% filter(Condition == "nsp5_C145A") %>% filter(mod == "No direct matc
 SARS_psms <- psm_annotations %>% 
 	separate(accession, into=c("pre","name","post","twee","prot")) %>% 
 	filter(name=="SARS") %>%
-	mutate(prot=str_replace(prot,"Protein14", "orf9c(protein14)")) %>%
+	mutate(prot=str_replace(prot,"Protein14", "protein14")) %>%
 	filter(str_detect(Condition, prot))     #So nsp5 is matched to nsp5 and nsp5_C145A
 SARS_mod <- psm_mod_annotation %>% 
 	separate(accession, into=c("pre","name","post","twee","prot")) %>% 
 	filter(name=="SARS") %>%
-	mutate(prot=str_replace(prot,"Protein14", "orf9c(protein14)")) %>%
+	mutate(prot=str_replace(prot,"Protein14", "protein14")) %>%
 	filter(str_detect(Condition, prot))
 
 #   Look at modifications per SARS-CoV-2 protein
-SARS_mod %>% count(prot) %>% arrange(desc(n)) %>% print(n=30)
+SARS_mod %>% count(Condition) %>% arrange(desc(n)) %>% print(n=30)
 SARS_mod %>% filter(mod == "Sulfation / Phospho") %>% select(Condition, sequence.x, PSM_ID) %>% unique
+SARS_mod %>% filter(str_detect(mod, "SNO")) %>% select(Condition, sequence.x, PSM_ID) %>% unique %>% print(n=100)
 
+SARS_mod %>% filter(str_detect(mod, "SNO") & Condition=="N") %>% select(mod_mass, mod) %>% unique %>% print(n=100)
+SARS_mod %>% filter(mod == "SNO / Val->Gln") %>% select(Condition, sequence.x, PSM_ID) %>% unique %>% print(n=100)
+
+SARS_mod %>% filter(str_detect(mod, "SNO") & Condition=="N") %>% pull(mass_diff)
+
+SARS_mod %>% filter(str_detect(mod, "Gluratylation")) %>% select(Condition, sequence.x, PSM_ID) %>% unique %>% print(n=30)
+SARS_mod %>% filter(str_detect(mod, "GGQ")) %>% select(Condition, sequence.x, PSM_ID, mass_diff) %>% unique %>% print(n=30)
+
+#	Get a unmodified PSM
 SARS_psms %>% filter(!PSM_ID %in% SARS_mod$PSM_ID) %>% 
-	filter(prot == "nsp14", sequence == "FYDAQPCSDK", bait == "qx017168") %>% select(Condition, PSM_ID) 
+	filter(prot == "nsp15", sequence == "KPTETICAPLTVFFDGR", bait == "qx017215") %>% select(Condition, PSM_ID) 
 
-SARS_mod %>% filter(prot == "S", mod == "Xlink:DSS[156] / Arg / HNE") %>% select(prot, sequence.x, PSM_ID, mass_diff) %>% pull(mass_diff)
-SARS_psms %>% filter(!PSM_ID %in% SARS_mod$PSM_ID) %>% 
-	filter(prot == "S", sequence == "FNGIGVTQNVLYENQK", bait == "qx017192") %>% select(Condition, PSM_ID) 
-
-SARS_mod %>% mutate(round_mass=round(mass_diff, 2)) %>%
-	add_count(round_mass) %>% 
-	select(round_mass, n, mod) %>%
-	unique() %>%
-	arrange(desc(n)) %>%
-	# print(n=50)
-	filter(n>400) %>%
-	pull(round_mass)
-
-SARS_mod %>% mutate(round_mass=round(mass_diff, 2)) %>%
-	select(sequence.x, round_mass, everything()) %>%
-	unite(seqmass, sequence.x:round_mass, remove=FALSE) %>%
-	count(seqmass) %>% arrange(desc(n))
-
+#	General overview
 SARS_mod %>% count(mod) %>% 
 	arrange(desc(n)) %>%
 	filter(n>500) %>% pull(mod)
