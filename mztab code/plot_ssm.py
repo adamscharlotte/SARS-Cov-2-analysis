@@ -1,5 +1,5 @@
 # /Users/adams/anaconda3/envs/ann_solo/bin/python3
-# "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017106"
+# "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017160"
 #
 
 # import argparse
@@ -25,7 +25,7 @@ def set_matching_peaks(library_spectrum, query_spectrum):
     query_spectrum.annotation = np.full_like(query_spectrum.mz, None, object)
     for peak_match in peak_matches:
         library_annotation = library_spectrum.annotation[peak_match[1]]
-        if library_annotation is not None:
+        if library_annotation is not None and library_annotation.ion_type in 'by':
             query_spectrum.annotation[peak_match[0]] = library_annotation
         else:
             fragment_annotation = PeptideFragmentAnnotation(1, 1, 'z', 0)
@@ -36,7 +36,7 @@ def set_matching_peaks(library_spectrum, query_spectrum):
 
 # Read the mzTab file.
 metadata = {}
-with open("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017106.mztab") as f_mztab:
+with open("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017160.mztab") as f_mztab:
     for line in f_mztab:
         line_split = line.strip().split('\t')
         if line_split[0] == 'MTD':
@@ -44,7 +44,7 @@ with open("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017106.m
         else:
             break   # Metadata lines should be on top.
 
-ssms = reader.read_mztab_ssms("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017106.mztab")
+ssms = reader.read_mztab_ssms("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017160.mztab")
 # make sure the SSM ids are strings.
 ssms.index = ssms.index.map(str)
 
@@ -60,6 +60,7 @@ for key in metadata:
                 settings.append('--{}'.format(param))
             if value not in ('False', 'True'):
                 settings.append(value)
+
 # File names.
 settings.append('dummy_spectral_library_filename')
 settings.append('dummy_query_filename')
@@ -67,10 +68,10 @@ settings.append('dummy_output_filename')
 config.parse(' '.join(settings))
 
 # Retrieve information on the requested query.
-query_id = "qx017106.15915.15915.2"
-query_usi = "mzspec:PXD018117:qx017106:scan:15915:GQGVPINTNSS[UNIMOD:21]PDDQIGYYR"
+query_id = "qx017160.9348.9348.2"
+query_usi = "mzspec:PXD018117:qx017160:scan:9348:[-28.031300]?GYGCSCDQLR"     #[UNIMOD:21]    [UNIMOD:21#g1]
 txt = 'm/z'
-query_spectrum_number = "controllerType=0 controllerNumber=1 scan=15915"
+query_spectrum_number = "controllerType=0 controllerNumber=1 scan=9348"
 query_uri = urlparse.urlparse(urlparse.unquote(
     metadata['ms_run[1]-location']))
 query_filename = os.path.abspath(os.path.join(
@@ -90,10 +91,6 @@ query_spectrum = None
 for spec in reader.read_mgf(query_filename):
 	if spec.identifier == query_spectrum_number:
 		query_spectrum = spec
-		# query_spectrum = process_spectrum(spec, False)
-		# Make sure that the precursor charge is set for query spectra
-		# with a undefined precursor charge.
-		# query_spectrum.precursor_charge = library_spectrum.precursor_charge
 		break
 
 # verify that the query spectrum was found
@@ -106,21 +103,10 @@ set_matching_peaks(library_spectrum, query_spectrum)
 plot.colors[None] = '#757575'
 
 # Plot the match.
-fig, ax = plt.subplots(figsize=(20, 10))
-
-# Plot without annotations.
+fig, ax = plt.subplots(figsize=(12, 6))
+# Plot with annotations.
 plot.mirror(query_spectrum, library_spectrum,
             {'color_ions': True, 'annotate_ions': True}, ax)
-# Add annotations to the library spectrum.
-# max_intensity = library_spectrum.intensity.max()
-# for i, annotation in enumerate(library_spectrum.annotation):
-#     if annotation is not None and annotation.ion_type != 'unknown':
-#         x = library_spectrum.mz[i]
-#         y = -library_spectrum.intensity[i] / max_intensity
-#         ax.text(x, y, str(annotation),
-#                 color=plot.colors[annotation.ion_type], zorder=5,
-#                 horizontalalignment='right', verticalalignment='center',
-#                 rotation=90, rotation_mode='anchor')
 
 # ax.set_ylim(-1.1, 1.05)
 
@@ -132,11 +118,6 @@ ax.text(0.5, 1.02,  f'Precursor ${txt}$ (top): {query_spectrum.precursor_mz:.4f}
                     f'Charge: {query_spectrum.precursor_charge}',
         horizontalalignment='center', verticalalignment='bottom',
         fontsize='large', transform=ax.transAxes)
-# 
-# , Score: {score:.3f}
-plt.savefig("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Mirror/Phospho/"f'{query_id}.png', dpi=300, bbox_inches='tight')
+
+plt.savefig("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Mirror/SNO/"f'{query_id}.png', dpi=300, bbox_inches='tight')
 plt.close()
-
-
-# if __name__ == '__main__':
-#     main()
