@@ -16,8 +16,8 @@ mztab = fread(file=csv, sep = '\t')
 mztab_mtol <- mztab %>% as_tibble %>%
     select(sequence, PSM_ID, exp_mass_to_charge, calc_mass_to_charge, charge) %>%
     mutate(mass_diff = (exp_mass_to_charge - calc_mass_to_charge)*charge) %>%
-    mutate(calc_mass = calc_mass_to_charge * charge) %>%
-    mutate(mass_tol = mass_tolerance * calc_mass * 10**-6) %>%
+    mutate(exp_mass = exp_mass_to_charge * charge) %>%
+    mutate(mass_tol = mass_tolerance * exp_mass * 10**-6) %>%
     mutate(mass_tol_pos = mass_diff + mass_tol) %>%
     mutate(mass_tol_neg = mass_diff - mass_tol) %>%
     filter(!(mass_tol_neg < 0 & mass_tol_pos > 0)) %>%      # filter out unmodified psms
