@@ -175,84 +175,98 @@ SARS_Shepherd_input <- SARS_psms %>% mutate(Spectrum = PSM_ID) %>% mutate(Spectr
 
 ################################################################################################################################################
 
-#	How many PSMs are there?				671,191
-psm_annotations %>% select(PSM_ID) %>% unique
-#	How many PSMs contain a Cys?			106,462
-psm_annotations %>% filter(str_detect(sequence, "C")) %>% select(PSM_ID) %>% unique
+#	How many PSMs? 							830,743
+psm_id %>% select(PSM_ID) %>% unique
+#	How many modified PSMs? 				402,586
+psm_mod %>% select(PSM_ID) %>% unique
+#	How many PSMs contain a Cys?			125,727
+psm_id %>% filter(str_detect(sequence, "C")) %>% select(PSM_ID) %>% unique
+#	How many modified PSMs with Cys?		58,821
+psm_mod %>% filter(str_detect(sequence.x, "C")) %>% select(PSM_ID) %>% unique
 
-#	How many modified PSMs are there?		307,641
-psm_mod_annotation %>% select(PSM_ID) %>% unique
-#	How many with Cys?						58,821
-psm_mod_annotation %>% filter(str_detect(sequence.x, "C")) %>% select(PSM_ID) %>% unique
-
-psm_cys <- psm_annotations %>% filter(str_detect(sequence, "C")) %>% select(sequence, PSM_ID) %>% unique %>% pull(sequence)
+#	How many cysteines are there?			152,766
+psm_cys <- psm_id %>% select(sequence, PSM_ID) %>% unique %>% pull(sequence)
 psm_cys_count <- str_count(psm_cys, pattern = "C")
-sum(psm_cys_count) 
+sum(psm_cys_count)
 
-Cys_1_CAM <- psm_mod_annotation %>% filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -57.021464 & mass_tol_neg < -57.021464) %>% 
+Cys_1_CAM <- psm_mod %>% filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -57.021464 & mass_tol_neg < -57.021464) %>% 
 	select(sequence.x, PSM_ID) %>% unique %>% pull(sequence.x) 
 Cys_1_CAM_count <- str_count(Cys_1_CAM, pattern = "C")
 table(Cys_1_CAM_count)
 sum(Cys_1_CAM_count)
 
-Cys_2_CAM <- psm_mod_annotation %>% filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -114.0429 & mass_tol_neg < -114.0429) %>% 
+Cys_2_CAM <- psm_mod %>% filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -114.0429 & mass_tol_neg < -114.0429) %>% 
 	select(sequence.x, PSM_ID) %>% unique %>% pull(sequence.x) 
 Cys_2_CAM_count <- str_count(Cys_2_CAM, pattern = "C")
 table(Cys_2_CAM_count)
 
+#	How many SARS PSMs?						43,781
+psm_id %>% filter(str_detect(accession,"SARS_CoV_2_")) %>% select(PSM_ID) %>% unique
+#	How many modified SARS PSMs?			27,983
+psm_mod %>% filter(str_detect(accession,"SARS_CoV_2_")) %>% select(PSM_ID) %>% unique
+#	How many PSMs contain a Cys?			18,868
+psm_id %>% filter(str_detect(accession,"SARS_CoV_2_")) %>% 
+	filter(str_detect(sequence, "C")) %>% select(PSM_ID) %>% unique
+#	How many modified PSMs with Cys?		14,102
+psm_mod %>% filter(str_detect(accession,"SARS_CoV_2_")) %>% 
+	filter(str_detect(sequence.x, "C")) %>% select(PSM_ID) %>% unique
 
-#	How many SARS PSMs?						40,828
-SARS_psms %>% select(PSM_ID) %>% unique
-#	How many PSMs contain a Cys?			17,858
-SARS_psms %>% filter(str_detect(sequence, "C")) %>% select(PSM_ID) %>% unique
-
-#	How many modified PSMs are there?		26,399
-SARS_mod %>% select(PSM_ID) %>% unique
-#	How many with Cys?						13,448
-SARS_mod %>% filter(str_detect(sequence.x, "C")) %>% select(PSM_ID) %>% unique
-
-psm_cys <- SARS_psms %>% filter(str_detect(sequence, "C")) %>% select(sequence, PSM_ID) %>% unique %>% pull(sequence)
+#	How many cysteines are there?			25,506
+psm_cys <- psm_id %>% filter(str_detect(accession,"SARS_CoV_2_")) %>% select(sequence, PSM_ID) %>% unique %>% pull(sequence)
 psm_cys_count <- str_count(psm_cys, pattern = "C")
-sum(psm_cys_count) 
+sum(psm_cys_count)
 
-Cys_1_CAM <- SARS_mod %>% filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -57.021464 & mass_tol_neg < -57.021464) %>% 
+Cys_1_CAM <- psm_mod %>% filter(str_detect(accession,"SARS_CoV_2_")) %>% 
+	filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -57.021464 & mass_tol_neg < -57.021464) %>% 
 	select(sequence.x, PSM_ID) %>% unique %>% pull(sequence.x) 
 Cys_1_CAM_count <- str_count(Cys_1_CAM, pattern = "C")
 table(Cys_1_CAM_count)
 sum(Cys_1_CAM_count)
 
-Cys_2_CAM <- SARS_mod %>% filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -114.0429 & mass_tol_neg < -114.0429) %>% 
+Cys_2_CAM <- psm_mod %>% filter(str_detect(accession,"SARS_CoV_2_")) %>% 
+	filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -114.0429 & mass_tol_neg < -114.0429) %>% 
 	select(sequence.x, PSM_ID) %>% unique %>% pull(sequence.x) 
 Cys_2_CAM_count <- str_count(Cys_2_CAM, pattern = "C")
 table(Cys_2_CAM_count)
 
-Cys_3_CAM <- SARS_mod %>% filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -171.0644 & mass_tol_neg < -171.0644) %>% 
+Cys_3_CAM <- psm_mod %>% filter(str_detect(accession,"SARS_CoV_2_")) %>% 
+	filter(str_detect(sequence.x, "C")) %>% filter(mass_tol_pos > -171.0644 & mass_tol_neg < -171.0644) %>% 
 	select(sequence.x, PSM_ID) %>% unique %>% pull(sequence.x) 
 Cys_3_CAM_count <- str_count(Cys_3_CAM, pattern = "C")
 table(Cys_3_CAM_count)
 
 #	Count CAM Cys
-
 csv_c_map <- csv %>% select(sequence, PSM_ID, spectra_ref, exp_mass_to_charge, retention_time)
 psm_c_map <- psm_csv %>% select(bait, accession, retention_time, exp_mass_to_charge)
 psm_c_id <- merge(psm_c_map, csv_c_map) %>% as_tibble
-psm_c_mod <- merge(psm_c_id, mod_data, by="PSM_ID") %>% as_tibble
-psm_c_mod_annotation <- merge(psm_c_mod, annotation, by.x = "bait.x", by.y = "fileID") %>% 
-	as_tibble %>% filter(Comments=="") %>%      #Filter out samples that were not included in the hcip analysis.
-	filter(!accession=="null")
-psm_c_annotations <- merge(psm_c_id, annotation, by.x = "bait", by.y = "fileID") %>% 
-	as_tibble %>% filter(Comments=="") %>%
-	filter(!accession=="null")
 
-psm_c_annotations %>% select(sequence, PSM_ID) %>% unique %>% filter(str_detect(sequence, "C")) %>%
-	filter(str_detect(sequence, "[160]"))
-
-#	106,462 cys -> 106,462 [160]
-
-psm_cys <- psm_c_annotations %>% filter(str_detect(sequence, "C")) %>% select(sequence, PSM_ID) %>% unique %>% pull(sequence)
+psm_cys <- psm_c_id %>% select(sequence, PSM_ID) %>% unique %>% pull(sequence)
 psm_cys_count <- str_count(psm_cys, pattern = "C")
 psm_160_count <- str_count(psm_cys, fixed("[160]"))
 sum(psm_cys_count) 
 sum(psm_160_count)
 
+################################################################################################################################################
 
+annotation_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/names/Gordon1_annotation.txt"
+annotation <- fread(annotation_path, sep= "\t")
+
+SARS_psms_SNO <- merge(psm_id, annotation, by.x = "bait", by.y = "fileID") %>% 
+	separate(accession, into=c("pre","name","post","twee","prot")) %>% 
+	filter(name=="SARS") %>%
+	mutate(prot=str_replace(prot,"Protein14", "protein14")) %>%
+	filter(str_detect(Condition, prot))     #So nsp5 is matched to nsp5 and nsp5_C145A
+SARS_mod_SNO <- merge(psm_mod, annotation, by.x = "bait.x", by.y = "fileID") %>% 
+	separate(accession, into=c("pre","name","post","twee","prot")) %>% 
+	filter(name=="SARS") %>%
+	mutate(prot=str_replace(prot,"Protein14", "protein14")) %>%
+	filter(str_detect(Condition, prot))
+
+SARS_mod_SNO %>% as_tibble %>% filter(Condition=="nsp5") %>% 
+	filter(prot=="nsp5") %>% count(sequence.x) %>% arrange(desc(n))
+SARS_mod_SNO %>% as_tibble %>% filter(Condition=="nsp5_C145A") %>% 
+	filter(prot=="nsp5") %>% count(sequence.x) %>% arrange(desc(n))
+
+SARS_mod_SNO %>% as_tibble %>% filter(Condition=="nsp5") %>% 
+	filter(prot=="nsp5") %>% filter(sequence.x=="HVICTSEDMLNPNYEDLLIR") %>%
+	arrange(mass_diff) %>% pull(mass_diff)
