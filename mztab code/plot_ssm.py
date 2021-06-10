@@ -1,15 +1,10 @@
 # /Users/adams/anaconda3/envs/ann_solo/bin/python3
-# "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017162"
-#
-
-# import argparse
-import os
-import urllib.parse as urlparse
 
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+# import spectrum_utils
 from spectrum_utils import plot
 from spectrum_utils.spectrum import PeptideFragmentAnnotation
 
@@ -17,6 +12,16 @@ from ann_solo import reader
 from ann_solo import spectrum_match
 from ann_solo.config import config
 from ann_solo.spectrum import process_spectrum
+
+import argparse
+import os
+import urllib.parse as urlparse
+parser = argparse.ArgumentParser()
+parser.add_argument('Filename', type=str)					# Filename
+parser.add_argument('Scan', type=str)
+parser.add_argument('Charge', type=str)
+parser.add_argument('Sequence', type=str)
+args = parser.parse_args()
 
 def set_matching_peaks(library_spectrum, query_spectrum):
     peak_matches = spectrum_match.get_best_match(
@@ -36,7 +41,8 @@ def set_matching_peaks(library_spectrum, query_spectrum):
 
 # Read the mzTab file.
 metadata = {}
-with open("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017162.mztab") as f_mztab:
+mztabFile = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/" + args.Filename + ".mztab"
+with open(mztabFile) as f_mztab:
     for line in f_mztab:
         line_split = line.strip().split('\t')
         if line_split[0] == 'MTD':
@@ -44,7 +50,7 @@ with open("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017162.m
         else:
             break   # Metadata lines should be on top.
 
-ssms = reader.read_mztab_ssms("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/qx017162.mztab")
+ssms = reader.read_mztab_ssms(mztabFile)
 # make sure the SSM ids are strings.
 ssms.index = ssms.index.map(str)
 
@@ -68,10 +74,10 @@ settings.append('dummy_output_filename')
 config.parse(' '.join(settings))
 
 # Retrieve information on the requested query.
-query_id = "qx017162.26386.26386.3"
-query_usi = "mzspec:PXD018117:qx017162:scan:26386:[-28.031300]?MAGNATEVPANSTVLSFCAFAVDAAK"     #[UNIMOD:21]    [UNIMOD:21#g1]
+query_id = args.Filename + "." + args.Scan + "." + args.Scan + "." + args.Charge
+query_usi = "mzspec:PXD018117:" + args.Filename + ":scan:" + args.Scan + ":" + args.Sequence  #[UNIMOD:121]    [UNIMOD:21]    [UNIMOD:21#g1]	[-28.031300]
 txt = 'm/z'
-query_spectrum_number = "controllerType=0 controllerNumber=1 scan=26386"
+query_spectrum_number = "controllerType=0 controllerNumber=1 scan=" + args.Scan
 query_uri = urlparse.urlparse(urlparse.unquote(
     metadata['ms_run[1]-location']))
 query_filename = os.path.abspath(os.path.join(
@@ -108,6 +114,7 @@ fig, ax = plt.subplots(figsize=(15, 7))
 # Plot with annotations.
 # plot.mirror(query_spectrum, library_spectrum,
 # 			{'color_ions': True, 'annotate_ions': True}, ax)
+
 plot.mirror(query_spectrum, library_spectrum,
 			{'color_ions': True, 'annotate_ions': False}, ax)
 # Add annotations to the library spectrum.
