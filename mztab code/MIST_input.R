@@ -21,6 +21,7 @@ proteins_length <- merge(proteins, accession_length, by="accession") %>% as_tibb
 inputFile <- proteins_length %>% 
     mutate(hash = "hash") %>%
     mutate(BaitSims = "hash") %>%
+    mutate_all(~gsub("SARS_CoV_2_", "", .)) %>%
     select(accession, hash, proteinlength, BaitSims, Bioreplicate, number_of_psms) %>%
     spread(Bioreplicate, number_of_psms, fill=0)
 
