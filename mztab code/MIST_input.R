@@ -33,8 +33,6 @@ fwrite(inputFile, input_output, sep= "\t", col.names=TRUE)
 
 # Replace SNoRE with S, protein14 with orf9c(protein14) and orf9b_low with orf9b
 
-# Remove SARS-CoV-2 in the preys
-
 # https://modbase.compbio.ucsf.edu/mist/
 
 # HIV trained and no singleton filtering
