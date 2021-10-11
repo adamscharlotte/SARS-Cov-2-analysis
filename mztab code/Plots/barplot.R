@@ -90,7 +90,7 @@ psm <- ggplot(comb_psm, aes(Level, fill = Identification)) +
 	geom_bar(position = "stack") +
 	theme_minimal() +
 	labs(title ="PSM overlap", x = "Level", y = "Number of PSMs") + 
-	scale_fill_manual(values=c("#071E22", "#849B96", "#377563")) +
+	scale_fill_manual(values=c("#071E22", "#849B96", "#377563"), name="") +
 	scale_y_continuous(labels = scales::comma) +
 	theme(axis.text.x=element_blank(),
 		axis.ticks.x=element_blank())
@@ -116,7 +116,7 @@ bar <- ggplot(comb_overlap, aes(Level, fill = Identification)) +
 	geom_bar(position = "stack") +
 	theme_minimal() +
 	labs(title ="Overlap", x = "Level", y = "Number of identifications") + 
-	scale_fill_manual(values=c("#071E22", "#849B96", "#377563")) +
+	scale_fill_manual(values=c("#071E22", "#849B96", "#377563"), name="") +
 	theme(axis.text.x=element_blank(),
 		axis.ticks.x=element_blank())
 
@@ -159,7 +159,7 @@ ppi <- ggplot(comb_ppi, aes(Level, fill = Identification)) +
 	geom_bar(position = "stack") +
 	theme_minimal() +
 	labs(title ="PPI overlap", x = "Level", y = "Number of PPIs") + 
-	scale_fill_manual(values=c("#071E22", "#849B96", "#377563")) +
+	scale_fill_manual(values=c("#071E22", "#849B96", "#377563"), name="") +
 	scale_y_continuous(labels = scales::comma) +
 	theme(axis.text.x=element_blank(),
 		axis.ticks.x=element_blank())
