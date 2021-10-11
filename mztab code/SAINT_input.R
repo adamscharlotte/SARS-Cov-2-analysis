@@ -14,7 +14,7 @@ proteins <- files_dir %>%
 
 baitFile <- proteins %>% as_tibble %>% mutate(C_or_T = str_replace(C_or_T, "TRUE", "T")) %>%
     select(SampleID, Condition, C_or_T) %>% unique
-
+proteins %>% as_tibble %>% select(bait, accession) %>% unique
 fwrite(baitFile, bait_output, sep= "\t", col.names=FALSE)
 
 #   create prey input file
@@ -25,8 +25,12 @@ accession_length <- length %>% as_tibble %>%
     separate(V1, into=c("pre", "accession", "post"), sep=">>") %>% 
     rename(proteinlength = V2) %>% select(accession,proteinlength)
 
-proteins_length <- merge(proteins, accession_length, by="accession") %>% as_tibble
-preyFile <- proteins_length %>% select(accession, proteinlength, gene_name) %>% unique()
+proteins_length <- merge(proteins, accession_length, by="accession") %>% 
+        mutate_all(~gsub("SARS_CoV_2_", "", .)) %>%
+        as_tibble
+preyFile <- proteins_length %>% select(accession, proteinlength, gene_name) %>%
+        mutate_all(~gsub("SARS_CoV_2_", "", .)) %>%
+        unique()
 
 fwrite(preyFile, prey_output, sep= "\t", col.names=FALSE)
 
@@ -34,6 +38,7 @@ fwrite(preyFile, prey_output, sep= "\t", col.names=FALSE)
 interaction_output <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/SAINT/interaction_file.txt"
 
 interactionFile <- proteins %>% as_tibble %>%
-    select(SampleID, Condition, accession, number_of_psms)
+    select(SampleID, Condition, accession, number_of_psms) %>%
+    mutate_all(~gsub("SARS_CoV_2_", "", .))    
 
 fwrite(interactionFile, interaction_output, sep= "\t", col.names=FALSE)
