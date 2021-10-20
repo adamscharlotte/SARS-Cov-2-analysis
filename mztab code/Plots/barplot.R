@@ -80,11 +80,12 @@ scan_overlap <- psm_annsolo %>% filter(SPEC %in% psm_gordon$SPEC) %>% select(Raw
 scan_overlap_g <- psm_gordon %>% filter(SPEC %in% psm_annsolo$SPEC) %>% select(RawFile, PSM_ID, SPEC, Reverse) %>% unique
 scan_overlap_g %>% count(Reverse)
 
-ann <- psm_annsolo %>% filter(!PSM_ID %in% psm_gordon$PSM_ID) %>% select(RawFile, PSM_ID) %>% mutate(Identification = "ANN-SoLo") %>% mutate(Level = "PSM") %>% unique %>% rename(ID=PSM_ID)
-gordon <- psm_gordon %>% filter(!PSM_ID %in% psm_annsolo$PSM_ID) %>% select(RawFile, PSM_ID) %>% mutate(Identification = "Gordon et al.") %>% mutate(Level = "PSM") %>% unique %>% rename(ID=PSM_ID)
+ann <- psm_annsolo %>% filter(!PSM_ID %in% psm_gordon$PSM_ID) %>% select(RawFile, PSM_ID) %>% mutate(Identification = "Reanalysis") %>% mutate(Level = "PSM") %>% unique %>% rename(ID=PSM_ID)
+gordon <- psm_gordon %>% filter(!PSM_ID %in% psm_annsolo$PSM_ID) %>% select(RawFile, PSM_ID) %>% mutate(Identification = "Original analysis") %>% mutate(Level = "PSM") %>% unique %>% rename(ID=PSM_ID)
 both <- psm_annsolo %>% filter(PSM_ID %in% psm_gordon$PSM_ID) %>% select(RawFile, PSM_ID) %>% mutate(Identification = "Overlap") %>% mutate(Level = "PSM") %>% unique %>% rename(ID=PSM_ID)
 
 comb_psm <- rbind(ann, gordon, both) 
+comb_psm$Identification <- factor(comb_psm$Identification, levels=c("Reanalysis", "Original analysis", "Overlap"))
 
 psm <- ggplot(comb_psm, aes(Level, fill = Identification)) +
 	geom_bar(position = "stack") +
