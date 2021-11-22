@@ -32,78 +32,120 @@ csv_map <- csv %>% select(PSM_ID, spectra_ref, exp_mass_to_charge, retention_tim
 psm_map <- psm_csv %>% select(bait, sequence, accession, retention_time, exp_mass_to_charge)
 psm_id <- merge(psm_map, csv_map) %>% as_tibble
 psm_mod <- merge(psm_id, mod_data, by="PSM_ID") %>% as_tibble
+psm_id %>% filter(!PSM_ID %in% psm_mod$PSM_ID) %>% select(PSM_ID) %>% unique
 
 #   Add annotation
 annotation_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/names/Gordon1_annotation.txt"
 annotation <- fread(annotation_path, sep= "\t")
 
 psm_mod_annotation <- merge(psm_mod, annotation, by.x = "bait.x", by.y = "fileID") %>% 
-	as_tibble %>% filter(Comments=="") %>%      #Filter out samples that were not included in the hcip analysis.
-	filter(!accession=="null")
+	as_tibble %>% filter(Comments=="") #%>%      #Filter out samples that were not included in the hcip analysis.
+	#filter(!accession=="null")
 psm_annotations <- merge(psm_id, annotation, by.x = "bait", by.y = "fileID") %>% 
 	as_tibble %>% filter(Comments=="") %>%
 	filter(!accession=="null")
 
-#   Create an overview of the modifications present in the PSMs that could be matched to proteins
-
 ################################################################################################################################################
 
-#   Only select modifications present in reported HCIPs
-#   Load HCIP result file
-HCIP_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/HCIP/HCIPs.csv"
-hcip <- fread(HCIP_path) %>% as_tibble
+#	Mass difference histogram
 
-#   Create column with BPAccession
-BP_hcip <- hcip %>% mutate(BPAccession = BP)
-BP_psm_mod <- psm_mod_annotation %>% 
-	separate(accession, into=c("pre","name","post","twee","prot"), remove=FALSE) %>% 
-	filter(!name=="SARS") %>%
-	separate(accession, into = c("pre", "Prey", "gene")) %>%
-	select(Condition, Prey, everything()) %>%
-	unite(BPAccession, Condition:Prey ,sep ="_", remove=FALSE) %>% unique
-BP_psm <-  psm_annotations %>%
-	separate(accession, into=c("pre","name","post","twee","prot"), remove=FALSE) %>% 
-	filter(!name=="SARS") %>%
-	separate(accession, into = c("pre", "Prey", "gene")) %>%
-	select(Condition, Prey, everything()) %>%
-	unite(BPAccession, Condition:Prey ,sep ="_", remove=FALSE) %>% unique
+psm_mod_his <- psm_mod %>% select(PSM_ID, mod, mod_mass, mass_diff) %>% unique %>%
+	mutate(mass_diff_rounded = round(mass_diff, digits = 0)) %>% filter(!mass_diff_rounded==0)
+	# filter(!mod=="No direct match found in Unimod")
+	# filter(!(mass_diff > -0.05 & mass_diff < 0.05))
+psm_mod_his %>% select(PSM_ID) %>% unique
 
-#   Link the modification information to the hcip information
-hcip_mod <- merge(BP_psm_mod, BP_hcip, by="BPAccession") %>% as_tibble
+ylabel <- paste("Number of PSMs")
 
-#   How many PSMs belong to a HCIP
-hcip_psm <- merge(BP_psm, BP_hcip, by="BPAccession") %>% as_tibble
+mass_diff_histogram <- ggplot(psm_mod_his, aes(mass_diff)) + geom_histogram(binwidth = 0.2) + 
+	theme_minimal() +
+	scale_x_continuous(limits=c(-50,120), n.breaks = 8) +
+	scale_y_continuous(n.breaks = 7, labels = scales::comma) +
+	xlab('Precursor mass difference (Da)') + 
+	# geom_vline(xintercept = 114) +
+	ylab(ylabel)
 
-#	Get non-modified peptides
-hcip_nonmod <- hcip_psm %>% filter(!PSM_ID %in% hcip_mod$PSM_ID)
+ggsave("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Precursor mass difference histogram.pdf", mass_diff_histogram,  width = 22, height = 10, units = "cm")
 
-#	Look at specific preys
-fasta_headers <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/fasta/fasta_headers.csv"
-unmapped_headers <- fread(fasta_headers, header = FALSE) %>% as_tibble
-gene_names <- unmapped_headers %>% separate(V3, into=c("pre", "gene"), sep = (" GN=")) %>% drop_na(gene) %>%
-	separate(gene, into = c("gene_name", "post", "ppost") ,sep=(" ")) %>%
-	select(V2, gene_name)
+psm_mod_his %>% count(mass_diff) %>% arrange(desc(n))
+psm_mod_his %>% filter(mass_diff> 31 & mass_diff< 33) %>% # count(mod) %>% arrange(desc(n))
+	select(mod, mod_mass) %>% unique %>% print(n=50)
 
-psm_genes <- merge(BP_psm, gene_names, by.x = "Prey", by.y = "V2") %>% as_tibble
-psm_genes_mod <- merge(BP_psm_mod, gene_names, by.x = "Prey", by.y = "V2") %>% as_tibble
+#   Create an overview of the modifications present in the PSMs that could be matched to proteins
 
 
-#   There are 6 BPs that do not contain any PSMs with a modifications
-BP_nomod <- BP_hcip %>% filter(!BP_gene %in% hcip_mod$BP_gene) %>% select(BP_gene) %>% unique
+
+
 
 ################################################################################################################################################
 
 #   Look at modifications in the SARS-CoV-2 proteins
-SARS_psms <- psm_annotations %>% 
-	separate(accession, into=c("pre","name","post","twee","prot")) %>% 
+SARS_psms <- merge(psm_id, annotation, by.x = "bait", by.y = "fileID") %>% 
+	as_tibble %>% separate(accession, into=c("pre","name","post","twee","prot")) %>% 
 	filter(name=="SARS") %>%
-	mutate(prot=str_replace(prot,"Protein14", "protein14")) %>%
-	filter(str_detect(Condition, prot))     #So nsp5 is matched to nsp5 and nsp5_C145A
-SARS_mod <- psm_mod_annotation %>% 
-	separate(accession, into=c("pre","name","post","twee","prot")) %>% 
+	mutate(prot=str_replace(prot,"Protein14", "protein14"))
+
+SARS_mod <- merge(psm_mod, annotation, by.x = "bait.x", by.y = "fileID") %>% 
+	as_tibble %>% separate(accession, into=c("pre","name","post","twee","prot")) %>% 
 	filter(name=="SARS") %>%
-	mutate(prot=str_replace(prot,"Protein14", "protein14")) %>%
-	filter(str_detect(Condition, prot))
+	mutate(prot=str_replace(prot,"Protein14", "protein14"))
+
+#	Phosphorylation on SARS-CoV-2 proteins
+phospho_sars <- SARS_mod %>% filter(mod=="Phospho"|mod=="Sulfation / Phospho") %>% 
+	select(Condition, prot, sequence.x,bait.x, PSM_ID) %>%
+	unite(seqbait, sequence.x:bait.x, remove=FALSE) %>%
+	filter(str_detect(Condition, prot)) %>% unique %>% print(n=40)
+psm_counts <- SARS_psms %>% select(sequence, bait, everything()) %>% 
+	unite(seqbait, sequence:bait, remove=FALSE) %>%
+	filter(seqbait %in% phospho_sars$seqbait) %>%
+	filter(!PSM_ID %in% phospho_sars$PSM_ID) %>% unique %>%
+	count(seqbait)
+phos_counts <- phospho_sars %>% count(seqbait) %>% rename(n2=n, seqbait2=seqbait)
+phospho_counts <- cbind(psm_counts, phos_counts) %>% as_tibble
+ratio <- phospho_counts %>% mutate(ratio=as.numeric(n2/n)) %>% pull(ratio)
+mean(ratio)
+
+SARS_mod %>% filter(mod=="Phospho"|mod=="Sulfation / Phospho") %>% filter(prot=="nsp12") %>% select(Condition, prot, sequence.x, PSM_ID, mod) %>% unique 
+
+#	Ubiquitination on SARS-CoV-2 proteins
+ub_sars <- SARS_mod %>% filter(str_detect(mod, "GlyGly")) %>% 
+	select(prot, sequence.x, bait.x, PSM_ID) %>% 
+	unite(seqbait, sequence.x:bait.x, remove=FALSE) %>%
+	unique %>% arrange(prot) %>% print(n=40)
+psm_counts <- SARS_psms %>% select(sequence, bait, everything()) %>% 
+	unite(seqbait, sequence:bait, remove=FALSE) %>%
+	filter(seqbait %in% ub_sars$seqbait) %>% unique %>%
+	filter(!PSM_ID %in% ub_sars$PSM_ID) %>%
+	count(seqbait)
+ub_counts <- ub_sars %>% count(seqbait) %>% rename(n2=n, seqbait2=seqbait) %>% filter(seqbait2 %in% psm_counts$seqbait)
+ubi_counts <- cbind(psm_counts, ub_counts) %>% as_tibble
+ratio <- ubi_counts %>% mutate(ratio=as.numeric(n2/n)) %>% pull(ratio)
+mean(ratio)
+
+psm_counts %>% as_tibble %>% print(n=40)
+#	S-nitrosylation on SARS-CoV-2 proteins
+sno_sars <- SARS_mod %>% filter(str_detect(mod, "Val->Ala")) %>% 
+	select(Condition,prot, sequence.x, bait.x, PSM_ID) %>% 
+	unite(seqbait, sequence.x:bait.x, remove=FALSE) %>%
+	unique %>% arrange(prot) 
+psm_counts <- SARS_psms %>% select(sequence, bait, everything()) %>% 
+	unite(seqbait, sequence:bait, remove=FALSE) %>%
+	filter(seqbait %in% sno_sars$seqbait) %>% unique %>%
+	filter(!PSM_ID %in% sno_sars$PSM_ID) %>%
+	count(seqbait)
+sno_counts <- sno_sars %>% count(seqbait) %>% rename(n2=n, seqbait2=seqbait) %>% filter(seqbait2 %in% psm_counts$seqbait)
+snos_counts <- cbind(psm_counts, sno_counts) %>% as_tibble %>% print(n=40)
+ratio <- snos_counts %>% mutate(ratio=as.numeric(n2/n)) %>% pull(ratio)
+mean(ratio)
+
+sno_sars %>% select(Condition, sequence.x, PSM_ID) %>% print(n=40)
+psm_counts %>% print(n=40)
+
+SARS_psms %>% filter(sequence %in% phospho_sars$sequence.x) %>% count(sequence) %>% arrange(desc(n))
+%>% 
+	filter(str_detect(Condition, prot)) %>% unique %>% print(n=40)
+	filter(str_detect(Condition, prot)) %>% unique %>% print(n=40)
+
 
 #   Look at modifications per SARS-CoV-2 protein
 SARS_mod %>% count(Condition) %>% arrange(desc(n)) %>% print(n=30)
@@ -131,7 +173,9 @@ SARS_mod %>% filter(str_detect(mod, "GGQ")) %>% select(Condition, sequence.x, PS
 
 #	Get a unmodified PSM
 SARS_psms %>% filter(!PSM_ID %in% SARS_mod$PSM_ID) %>% 
-	filter(prot == "orf9b", sequence == "KTLNSLEDK", bait == "qx017206") %>% select(Condition, PSM_ID) 
+	filter(prot == "N", sequence == "GQGVPINTNSSPDDQIGYYR", bait == "qx017105") %>% select(Condition, PSM_ID) 
+
+SARS_mod %>% filter(prot == "orf9b", sequence.x == "MDPKISEMHPALR", bait.x == "qx017206") %>% select(Condition, PSM_ID, mass_diff) 
 
 #	General overview
 SARS_mod %>% count(mod) %>% 
@@ -270,3 +314,69 @@ SARS_mod_SNO %>% as_tibble %>% filter(Condition=="nsp5_C145A") %>%
 SARS_mod_SNO %>% as_tibble %>% filter(Condition=="nsp5") %>% 
 	filter(prot=="nsp5") %>% filter(sequence.x=="HVICTSEDMLNPNYEDLLIR") %>%
 	arrange(mass_diff) %>% pull(mass_diff)
+
+################################################################################################################################################
+
+#   Only select modifications present in reported HCIPs
+#   Load HCIP result file
+HCIP_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/HCIP/HCIPs.csv"
+hcip <- fread(HCIP_path) %>% as_tibble
+
+#   Create column with BPAccession
+BP_hcip <- hcip %>% mutate(BPAccession = BP)
+BP_psm_mod <- psm_mod_annotation %>% 
+	separate(accession, into=c("pre","name","post","twee","prot"), remove=FALSE) %>% 
+	filter(!name=="SARS") %>%
+	separate(accession, into = c("pre", "Prey", "gene")) %>%
+	select(Condition, Prey, everything()) %>%
+	unite(BPAccession, Condition:Prey ,sep ="_", remove=FALSE) %>% unique
+BP_psm <-  psm_annotations %>%
+	separate(accession, into=c("pre","name","post","twee","prot"), remove=FALSE) %>% 
+	filter(!name=="SARS") %>%
+	separate(accession, into = c("pre", "Prey", "gene")) %>%
+	select(Condition, Prey, everything()) %>%
+	unite(BPAccession, Condition:Prey ,sep ="_", remove=FALSE) %>% unique
+
+#   Link the modification information to the hcip information
+hcip_mod <- merge(BP_psm_mod, BP_hcip, by="BPAccession") %>% as_tibble
+
+#   How many PSMs belong to a HCIP
+hcip_psm <- merge(BP_psm, BP_hcip, by="BPAccession") %>% as_tibble
+
+#	Get non-modified peptides
+hcip_nonmod <- hcip_psm %>% filter(!PSM_ID %in% hcip_mod$PSM_ID)
+
+#	Look at specific preys
+fasta_headers <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/fasta/fasta_headers.csv"
+unmapped_headers <- fread(fasta_headers, header = FALSE) %>% as_tibble
+gene_names <- unmapped_headers %>% separate(V3, into=c("pre", "gene"), sep = (" GN=")) %>% drop_na(gene) %>%
+	separate(gene, into = c("gene_name", "post", "ppost") ,sep=(" ")) %>%
+	select(V2, gene_name)
+
+psm_genes <- merge(BP_psm, gene_names, by.x = "Prey", by.y = "V2") %>% as_tibble
+psm_genes_mod <- merge(BP_psm_mod, gene_names, by.x = "Prey", by.y = "V2") %>% as_tibble
+
+
+#   There are 6 BPs that do not contain any PSMs with a modifications
+BP_nomod <- BP_hcip %>% filter(!BP_gene %in% hcip_mod$BP_gene) %>% select(BP_gene) %>% unique
+
+
+psm_genes_mod %>% filter(str_detect(mod, "Val->Ala")) %>% count(Condition) %>% arrange(desc(n))
+psm_genes_mod %>% filter(str_detect(mod, "SNO")) %>% count(Condition) %>% arrange(desc(n))
+
+psm_genes_mod %>% filter(str_detect(mod, "Val->Ala")) %>% 
+	#filter(str_detect(sequence.x, "C")) %>% count(Condition) %>% arrange(desc(n))
+	filter(Condition=="nsp15") %>% 
+	#filter(gene_name=="CDHR5") %>%
+	#count(gene_name) %>% arrange(desc(n))
+	count(sequence.x) %>% arrange(desc(n))
+
+psm_genes_mod %>% filter(str_detect(mod, "SNO")) %>% 
+	filter(Condition=="nsp5") %>% 
+	#filter(gene_name=="CDHR5") %>%
+	#count(gene_name) %>% arrange(desc(n))
+	count(sequence.x) %>% arrange(desc(n))
+
+hcip_mod %>% filter(str_detect(mod, "Val->Ala")) %>% count(Condition)
+
+################################################################################################################################################
