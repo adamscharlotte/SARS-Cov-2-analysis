@@ -1,6 +1,7 @@
 library(tidyverse)
 
-path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/modifications"
+path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/modifications_10ppm"
+library(data.table)
 
 setwd(path)
 files <- dir(pattern = "*.csv")
@@ -12,6 +13,13 @@ pre_data <- files %>%
 
 pre_data %>% as_tibble %>% add_count(mod) %>% arrange(desc(n)) %>% select(mod, n) %>% unique %>% print(n=30)
 
+#	Add annotation
+annotation_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/names/Gordon1_annotation.txt"
+annotation <- fread(annotation_path, sep= "\t")
+
+pre_data_annot <- merge(pre_data, annotation, by.x = "bait", by.y = "fileID") 
+pre_data_annot %>% as_tibble %>% pull(Condition) %>% unique
+ %>% filter(Condition=="Nsp3")
 
 #   look at most common modifications
 pre_data %>% as_tibble %>% add_count(mod) %>% arrange(desc(n)) %>% select(mod,n) %>% 
