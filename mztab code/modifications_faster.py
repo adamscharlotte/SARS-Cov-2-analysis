@@ -7,9 +7,9 @@ import sys
 import argparse, pathlib
 
 parser = argparse.ArgumentParser()
-parser.add_argument('bait', type=str)
+parser.add_argument('bait', type=str)					# Filename
 parser.add_argument('unimod_path', type=str)
-parser.add_argument('tol_py_csv', type=pathlib.Path)
+parser.add_argument('tol_py_csv', type=pathlib.Path)	# Output of modifications.R
 args = parser.parse_args()
 
 output_path = args.bait + '.csv'
