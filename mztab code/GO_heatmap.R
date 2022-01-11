@@ -59,11 +59,11 @@ heatmapPlot(matrix_similarity,
 tbl_reduced_terms <- df_reduced_terms %>% as_tibble %>% mutate(ID = go) %>% dplyr::select(ID, parentTerm)
 
 tbl_reduced_go_result <- merge(tbl_go_result, tbl_reduced_terms) %>% as_tibble %>%
-	dplyr::select(parentTerm, ViralProtein, everything()) %>% 
-	# filter(parentTerm == Description)
-	unite(VP, parentTerm:ViralProtein, sep ="_", remove=FALSE) %>% 
-	group_by(VP) %>% mutate(avg_value = mean(p.adjust)) %>%
-	ungroup() %>% dplyr::select(-VP)
+	filter(parentTerm == Description)
+	# dplyr::select(parentTerm, ViralProtein, everything()) %>% 
+	# unite(VP, parentTerm:ViralProtein, sep ="_", remove=FALSE) %>% 
+	# group_by(VP) %>% mutate(avg_value = mean(p.adjust)) %>%
+	# ungroup() %>% dplyr::select(-VP)
 
 tbl_ggplot <- data.frame()
 Baits <- tbl_reduced_go_result %>% dplyr::pull(ViralProtein) %>% unique()
@@ -74,8 +74,7 @@ for(bait in Baits) {
 	tbl_ggplot <- rbind(tbl_ggplot, tbl_description_bait)
 }
 
-tbl_ggplot_input %>% count(ViralProtein) %>% print(n=27)
-tbl_ggplot_input <- tbl_ggplot %>% mutate(logpadjust = -log10(avg_value)) %>% 
+tbl_ggplot_input <- tbl_ggplot %>% mutate(logpadjust = -log10(p.adjust)) %>% 
 	dplyr::select(parentTerm, logpadjust, ViralProtein) %>% unique %>% replace(is.na(.), 0) 
 
 tbl_ggplot %>% filter(parentTerm == "cristae formation") %>% dplyr::pull(Description) %>% unique
@@ -125,8 +124,9 @@ plot_heatmap <- heatmap(tbl_ggplot_input, Colv = NA, Rowv = NA, scale="logpadjus
 
 ##################################################################################################################################################################################################################################
 
+#	Top parent terms
 tbl_top_go_result <- merge(tbl_go_result, tbl_reduced_terms) %>% as_tibble %>%
-	dplyr::select(Description, ViralProtein, everything()) %>%
+	filter(parentTerm == Description) %>%
 	group_by(ViralProtein) %>% top_n(-1, pvalue) %>%
 	ungroup()
 
@@ -139,7 +139,7 @@ for(bait in Baits) {
 	tbl_top_ggplot <- rbind(tbl_top_ggplot, tbl_description_bait)
 }
 
-tbl_top_ggplot_input <- tbl_top_ggplot %>% mutate(logpadjust = -log10(avg_value)) %>% 
+tbl_top_ggplot_input <- tbl_top_ggplot %>% mutate(logpadjust = -log10(p.adjust)) %>% 
 	dplyr::select(parentTerm, logpadjust, ViralProtein) %>% unique %>% replace(is.na(.), 0) 
 
 tbl_top_ggplot_input$ViralProtein <- factor(tbl_top_ggplot_input$ViralProtein,levels = c("M", "nsp1", "nsp4", "nsp6", "nsp7", "nsp8", 
