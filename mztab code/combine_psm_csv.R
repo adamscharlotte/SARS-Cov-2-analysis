@@ -109,9 +109,9 @@ SARS_mod %>% filter(mod=="Phospho"|mod=="Sulfation / Phospho") %>% filter(prot==
 
 #	Ubiquitination on SARS-CoV-2 proteins
 ub_sars <- SARS_mod %>% filter(str_detect(mod, "GlyGly")) %>% 
-	select(prot, sequence.x, bait.x, PSM_ID) %>% 
+	select(Condition, sequence.x, bait.x, PSM_ID, mod) %>% 
 	unite(seqbait, sequence.x:bait.x, remove=FALSE) %>%
-	unique %>% arrange(prot) %>% print(n=40)
+	unique %>% arrange(Condition) %>% print(n=40)
 psm_counts <- SARS_psms %>% select(sequence, bait, everything()) %>% 
 	unite(seqbait, sequence:bait, remove=FALSE) %>%
 	filter(seqbait %in% ub_sars$seqbait) %>% unique %>%
@@ -163,7 +163,7 @@ SARS_psms %>% select(Condition, sequence) %>%
 	unique %>% print(n=100)
 
 SARS_mod %>% filter(str_detect(mod, "GlyGly")) %>% select(Condition, sequence.x, PSM_ID) %>% unique %>% print(n=30) 
-SARS_mod %>% filter(str_detect(mod, "GlyGly")) %>% select(mod, PSM_ID) %>% unique %>% print(n=30) 
+SARS_mod %>% filter(str_detect(mod, "GlyGly")) %>% dplyr::select(mod, PSM_ID) %>% unique %>% print(n=30) 
 SARS_mod %>% filter(str_detect(mod, "GlyGly")) %>% pull(mass_diff)
 
 SARS_mod %>% filter(mass_diff > -28.0320 & mass_diff < -28.0304) %>% select(Condition, sequence.x, PSM_ID) %>% unique %>% print(n=30) 
@@ -380,3 +380,86 @@ psm_genes_mod %>% filter(str_detect(mod, "SNO")) %>%
 hcip_mod %>% filter(str_detect(mod, "Val->Ala")) %>% count(Condition)
 
 ################################################################################################################################################
+#	Look at ubiquitination in different samples
+fasta_headers <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/fasta/fasta_headers.csv"
+unmapped_headers <- fread(fasta_headers, header = FALSE) %>% as_tibble
+gene_names <- unmapped_headers %>% separate(V3, into=c("pre", "gene"), sep = (" GN=")) %>% drop_na(gene) %>%
+	separate(gene, into = c("gene_name", "post", "ppost") ,sep=(" ")) %>%
+	select(V2, gene_name)
+
+#	Load MiST output
+# 	Before you can load the MistOutput the first couple of lines must be removed.
+MIST <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/MiST/MistOutput.txt", sep= "\t") %>% as_tibble
+MIST_output <- merge(MIST, gene_names, by.x = "Prey", by.y = "V2") %>% 		# Add gene names
+	as_tibble %>% mutate(PreyGene = gene_name) %>% mutate(idBait=Bait) %>%
+	filter(!MiST==0) %>%
+	select(idBait, Prey, everything()) %>%
+	unite(BP, idBait:Prey ,sep ="_", remove=FALSE) %>%
+	select(idBait, PreyGene, everything()) %>% unite(BP_gene, idBait:PreyGene ,sep ="_", remove=FALSE)
+
+#	Load SAINT output
+SAINT_output <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/SAINT/list.txt", sep= "\t") %>% as_tibble %>%
+	mutate(idBait=Bait) %>% select(idBait, Prey, everything()) %>%
+	unite(BP, idBait:Prey ,sep ="_", remove=FALSE) %>%
+	select(idBait, PreyGene, everything()) %>% unite(BP_gene, idBait:PreyGene ,sep ="_", remove=FALSE)
+ 
+#	Combine the MIST and SAINT output
+MIST_filter <- MIST_output %>% filter(BP %in% SAINT_output$BP)
+SAINT_filter <- SAINT_output %>% filter(BP %in% MIST_output$BP)
+SAINT_MIST <- merge(MIST_filter, SAINT_filter) %>% as_tibble
+
+#	Add modifications
+BP_psm_mod <- psm_mod_annotation %>% 
+	separate(accession, into=c("pre","name","post","twee","prot"), remove=FALSE) %>% 
+	filter(!name=="SARS") %>%
+	separate(accession, into = c("pre", "Prey", "gene")) %>%
+	select(Condition, Prey, everything()) %>%
+	unite(BP, Condition:Prey ,sep ="_", remove=FALSE) %>% unique
+BP_psm <-  psm_annotations %>%
+	separate(accession, into=c("pre","name","post","twee","prot"), remove=FALSE) %>% 
+	filter(!name=="SARS") %>%
+	separate(accession, into = c("pre", "Prey", "gene")) %>%
+	select(Condition, Prey, everything()) %>%
+	unite(BP, Condition:Prey ,sep ="_", remove=FALSE) %>% unique
+
+#   Link the modification information to the hcip information
+SAINT_MIST_mod <- merge(BP_psm_mod, SAINT_MIST, by="BP") %>% as_tibble
+
+#   How many PSMs belong to a HCIP
+SAINT_MIST_psm <- merge(BP_psm, BP_hcip, by="BP") %>% as_tibble
+
+#	Get non-modified peptides
+SAINT_MIST_nonmod <- SAINT_MIST_psm %>% filter(!PSM_ID %in% hcip_mod$PSM_ID)
+
+
+SAINT_MIST_mod %>% filter(str_detect(mod, "GlyGly")) %>% count(Condition) %>% arrange(desc(n)) %>% print(n=30)
+
+SAINT_MIST_mod %>% filter(str_detect(mod, "GlyGly")) %>% 
+	filter(MiST >= 0.7 & BFDR <= 0.05 & AvgSpec >= 2) %>% 
+	dplyr::select(BP_gene, exp_mass_to_charge.y, calc_mass_to_charge, mass_diff, mod)
+	
+	dplyr::select(BP_gene, PSM_ID, sequence.x, mass_diff, mod)
+
+SAINT_MIST_mod %>% filter(str_detect(mod, "GlyGly")) %>%
+	select(BP_gene)
+	# count(sequence.x)
+	filter(Prey.x=="P62979") %>% count(bait.x) %>% arrange(desc(n))
+
+SAINT_MIST_nonmod %>% filter(Prey.x=="Q9HB71") %>% filter(sequence=="ISNYGWDQSDKFVK") %>% count(Condition)
+
+SAINT_MIST_mod %>% filter(mod=="Phospho"|mod=="Sulfation / Phospho") %>% 
+	filter(MiST >= 0.7 & BFDR <= 0.05 & AvgSpec >= 2) %>% 
+	select(BP_gene, PSM_ID, sequence.x) %>% print(n=40)
+
+################################################################################################################################################
+
+psm_mod %>% select(PSM_ID) %>% unique
+
+mass_difference_table <- psm_mod %>% mutate(mass_diff_rounded = round(mass_diff, 2)) %>% 
+	select(PSM_ID, mass_diff_rounded, mod) %>% unique() %>%
+	filter(!(mass_diff_rounded < 0.5 & mass_diff_rounded > -0.5)) %>%
+	add_count(mass_diff_rounded) %>%
+	select(mass_diff_rounded, n, mod) %>% unique() %>%
+	arrange(desc(mass_diff_rounded))
+
+fwrite(mass_difference_table, "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/PTM/mass_differences.csv", append = FALSE, col.names = TRUE)
