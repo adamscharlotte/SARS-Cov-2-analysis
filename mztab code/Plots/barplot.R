@@ -85,13 +85,13 @@ gordon <- psm_gordon %>% filter(!PSM_ID %in% psm_annsolo$PSM_ID) %>% select(RawF
 both <- psm_annsolo %>% filter(PSM_ID %in% psm_gordon$PSM_ID) %>% select(RawFile, PSM_ID) %>% mutate(Identification = "Overlap") %>% mutate(Level = "PSM") %>% unique %>% rename(ID=PSM_ID)
 
 comb_psm <- rbind(ann, gordon, both) 
-comb_psm$Identification <- factor(comb_psm$Identification, levels=c("Reanalysis", "Original analysis", "Overlap"))
+comb_psm$Identification <- factor(comb_psm$Identification, levels=c("Reanalysis", "Overlap", "Original analysis"))
 
 psm <- ggplot(comb_psm, aes(Level, fill = Identification)) +
 	geom_bar(position = "stack") +
 	theme_minimal() +
 	labs(title ="PSM overlap", x = "Level", y = "Number of PSMs") + 
-	scale_fill_manual(values=c("#071E22", "#849B96", "#377563"), name="") +
+	scale_fill_manual(values=c("#C0D2F7", "#0E1C36", "#F33B16"), name="") +
 	scale_y_continuous(labels = scales::comma) +
 	theme(axis.text.x=element_blank(),
 		axis.ticks.x=element_blank())
@@ -136,7 +136,12 @@ HCIP_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/HC
 hcip <- fread(HCIP_path) %>% as_tibble
 
 ##############################################################################################################################
-
+#	Look at specific preys
+fasta_headers <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/fasta/fasta_headers.csv"
+unmapped_headers <- fread(fasta_headers, header = FALSE) %>% as_tibble
+gene_names <- unmapped_headers %>% separate(V3, into=c("pre", "gene"), sep = (" GN=")) %>% drop_na(gene) %>%
+	separate(gene, into = c("gene_name", "post", "ppost") ,sep=(" ")) %>%
+	select(V2, gene_name)
 #	Load PPI data
 SAINT_MIST_filtered <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/HCIP/HCIPs.csv") %>% as_tibble
 Gordon <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/HCIP/AP-MS/Gordon/intact_gordon.txt", sep= "\t") %>% as_tibble
@@ -150,17 +155,18 @@ Gordon_result <- Gordon_gene %>% mutate(Prey = IDinteractorB) %>% mutate(PreyGen
 	select(idBait, Prey, everything()) %>% unite(BP, idBait:Prey, sep ="_", remove=FALSE) %>%
 	select(idBait, PreyGene, everything()) %>% unite(BP_gene, idBait:PreyGene, sep ="_", remove=FALSE)
 
-ann <- SAINT_MIST_filtered %>% filter(!BP_gene %in% Gordon_result$BP_gene) %>% select(idBait, BP_gene) %>% mutate(Identification = "ANN-SoLo") %>% mutate(Level = "PSM") %>% unique
-gordon <- Gordon_result %>% filter(!BP_gene %in% SAINT_MIST_filtered$BP_gene) %>% select(idBait, BP_gene) %>% mutate(Identification = "Gordon et al.") %>% mutate(Level = "PSM") %>% unique
-both <- SAINT_MIST_filtered %>% filter(BP_gene %in% Gordon_result$BP_gene) %>% select(idBait, BP_gene) %>% mutate(Identification = "Overlap") %>% mutate(Level = "PSM") %>% unique
+ann <- SAINT_MIST_filtered %>% filter(!BP_gene %in% Gordon_result$BP_gene) %>% select(idBait, BP_gene) %>% mutate(Identification = "Reanalysis") %>% mutate(Level = "PPI") %>% unique
+gordon <- Gordon_result %>% filter(!BP_gene %in% SAINT_MIST_filtered$BP_gene) %>% select(idBait, BP_gene) %>% mutate(Identification = "Original analysis") %>% mutate(Level = "PPI") %>% unique
+both <- SAINT_MIST_filtered %>% filter(BP_gene %in% Gordon_result$BP_gene) %>% select(idBait, BP_gene) %>% mutate(Identification = "Overlap") %>% mutate(Level = "PPI") %>% unique
 
 comb_ppi <- rbind(ann, gordon, both) 
+comb_ppi$Identification <- factor(comb_ppi$Identification, levels=c("Reanalysis", "Overlap", "Original analysis"))
 
 ppi <- ggplot(comb_ppi, aes(Level, fill = Identification)) +
 	geom_bar(position = "stack") +
 	theme_minimal() +
 	labs(title ="PPI overlap", x = "Level", y = "Number of PPIs") + 
-	scale_fill_manual(values=c("#071E22", "#849B96", "#377563"), name="") +
+	scale_fill_manual(values=c("#C0D2F7", "#0E1C36", "#F33B16"), name="") +
 	scale_y_continuous(labels = scales::comma) +
 	theme(axis.text.x=element_blank(),
 		axis.ticks.x=element_blank())
