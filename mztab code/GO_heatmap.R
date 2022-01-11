@@ -1,6 +1,6 @@
 library(data.table)
 library(tidyverse)
-library(annotables)
+# library(annotables)
 library(clusterProfiler)
 library(org.Hs.eg.db)
 # library(msigdbr)
@@ -9,20 +9,28 @@ library(RColorBrewer)
 # library(GOxploreR)
 library(rrvgo)
 
-#	Load PPIs
+# Load data ---------------------------
+
+#	Load protein-protein interactions
 tbl_ppi <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/HCIP/HCIPs.csv") %>% as_tibble
 
 #	Load genes background
 path_fasta_headers <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/fasta/fasta_headers.csv"
 tbl_fasta_headers <- fread(path_fasta_headers, header = FALSE) %>% as_tibble
-tbl_background <- tbl_fasta_headers %>% separate(V3, into=c("pre", "gene"), sep = (" GN=")) %>% drop_na(gene) %>%
+tbl_background <- tbl_fasta_headers %>% 
+	separate(V3, into=c("pre", "gene"), sep = (" GN=")) %>% 
+	drop_na(gene) %>%
 	separate(gene, into = c("gene_name", "post", "ppost") ,sep=(" ")) %>%
 	dplyr::rename(gene_symbol = gene_name) %>%
-	dplyr::select(gene_symbol) %>% unique
+	dplyr::select(gene_symbol) %>% 
+	unique()
 
 #	Map entrez gene names
-tbl_gene_map <- grch38 %>% mutate(entrez_gene=as.character(entrez)) %>% 
-	dplyr::rename(gene_symbol=symbol) %>% dplyr::select(gene_symbol, entrez_gene) %>% unique
+tbl_gene_map <- grch38 %>% 
+	mutate(entrez_gene=as.character(entrez)) %>% 
+	dplyr::rename(gene_symbol=symbol) %>% 
+	dplyr::select(gene_symbol, entrez_gene) %>% 
+	unique()
 tbl_bait_prey <- tbl_ppi %>% dplyr::rename(gene_symbol = PreyGene) %>% dplyr::select(idBait, gene_symbol)
 tbl_bait_entrez <- merge(tbl_bait_prey, tbl_gene_map) %>% as_tibble %>% dplyr::select(idBait, entrez_gene) %>% unique 
 tbl_background_entrez <- merge(tbl_background, tbl_gene_map) %>% as_tibble %>% dplyr::select(gene_symbol, entrez_gene) %>% unique
@@ -68,7 +76,7 @@ tbl_reduced_go_result <- merge(tbl_go_result, tbl_reduced_terms) %>% as_tibble %
 tbl_ggplot <- data.frame()
 Baits <- tbl_reduced_go_result %>% dplyr::pull(ViralProtein) %>% unique()
 tbl_all_descriptions <- tbl_reduced_go_result %>% dplyr::select(parentTerm) %>% unique
-for(bait in Baits) {
+for (bait in Baits) {
 	tbl_simple_go_bait <- tbl_reduced_go_result %>% filter(ViralProtein==bait) %>% dplyr::select(-ViralProtein)
 	tbl_description_bait <- tbl_all_descriptions %>% left_join(tbl_simple_go_bait) %>% mutate(ViralProtein = bait)
 	tbl_ggplot <- rbind(tbl_ggplot, tbl_description_bait)
@@ -99,12 +107,16 @@ plot <- ggplot(tbl_ggplot_input, aes(y=parentTerm, x=ViralProtein, fill=logpadju
 	# scale_fill_gradientn(colors = my_colors, na.value="white") +
 	scale_fill_gradientn(colors = colorRampPalette(brewer.pal(9, "Blues"))(25)) +
 	# scale_fill_gradient(low = "white", high = "darkblue")
-	theme(panel.background = element_blank(), axis.ticks= element_blank(), 
-	axis.text.x = element_text(vjust=0.7, angle=90)) +
-	labs(fill='-log10(adjusted p-value)')
-
-plot <- plot + theme(legend.key.size = unit(0.5, "cm"), legend.title = element_text(size = 7, face="bold"), 
-               legend.text = element_text(size = 7), legend.position = c(-1.7, 0.67))
+	labs(fill='-log10(adjusted p-value)') +
+	theme(
+		axis.ticks= element_blank(),
+		axis.text.x = element_text(vjust=0.7, angle=90),
+		legend.key.size = unit(0.5, "cm"),
+		legend.title = element_text(size = 7, face="bold"),
+		legend.text = element_text(size = 7),
+		legend.position = c(-1.7, 0.67),
+		panel.background = element_blank()
+	)
 
 # tbl_ggplot_input_2 <- tbl_ggplot_input %>% filter(!ViralProtein=="nsp8")
 # plot_2
