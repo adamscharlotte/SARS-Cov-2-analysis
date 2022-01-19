@@ -174,45 +174,81 @@ tbl_parent_order <- merge(tbl_index_order, tbl_parent_terms) %>%
 # Plot the GO terms -----------------------------------------------------------------------------------------------------------------
 tbl_ggplot <- data.frame()
 Baits <- tbl_reduced_go_result %>% dplyr::pull(ViralProtein) %>% unique()
-tbl_all_descriptions <- tbl_reduced_go_result %>% dplyr::select(parentTerm, parentID) %>% unique
+tbl_all_descriptions <- tbl_reduced_go_result %>% dplyr::select(Description, parentID) %>% unique
 for (bait in Baits) {
 	tbl_simple_go_bait <- tbl_reduced_go_result %>% filter(ViralProtein==bait) %>% dplyr::select(-ViralProtein)
 	tbl_description_bait <- tbl_all_descriptions %>% left_join(tbl_simple_go_bait) %>% mutate(ViralProtein = bait)
 	tbl_ggplot <- rbind(tbl_ggplot, tbl_description_bait)
 }
 
+rbind(tbl_reduced_terms, tbl_reduced_terms_orf7a) %>%
+	merge(tbl_go_result) %>% 
+	as_tibble %>%
+	filter(parentTerm == "tRNA transport") %>%
+	# filter(parentTerm == "granulocyte activation") %>%
+	# filter(parentTerm == "oxidative phosphorylation") %>%
+	# filter(parentTerm == "tRNA transport") %>%
+	unique() %>%
+	dplyr::select(Description, ViralProtein, size, score, Count)
+
 tbl_ggplot_input <- tbl_ggplot %>% 
-	mutate(logpadjust = -log10(p.adjust)) %>% 
-	dplyr::select(parentTerm, logpadjust, ViralProtein, parentID) %>% 
 	merge(tbl_parent_order) %>%
 	as_tibble %>%
+	arrange(index_order) %>%
+	mutate(logpadjust = -log10(p.adjust)) %>% 
+	dplyr::select(Description, logpadjust, ViralProtein, parentID, index_order) %>% 
 	unique() %>% 
 	replace(is.na(.), 0) %>%
-	arrange(index_order)
+	mutate(
+		countfactor = cut(
+			logpadjust,
+			breaks = c(-1, 0, 3, 6, 9, max(logpadjust)),
+			labels = c("0", "0-3", "3-6", "6-9", ">9")
+			)
+	) %>%
+	mutate(countfactor=factor(as.character(countfactor), levels=rev(levels(countfactor))))
 
-plot <- ggplot(tbl_ggplot_input, aes(y=parentTerm, x=ViralProtein, fill=logpadjust)) + 
-	geom_tile(colour="grey",size=0.40) +
+first_to_upper <- function(x) {
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
+
+tbl_ggplot_upper <- tbl_ggplot_input %>% 
+	mutate(ViralProtein = first_to_upper(ViralProtein)) %>%
+	mutate(Description = first_to_upper(Description)) %>%
+	mutate(Description = str_replace(Description, "TRNA", "tRNA")) %>%
+	mutate(Description = str_replace(Description, "NcRNA", "ncRNA"))
+
+tbl_ggplot_upper$ViralProtein <- factor(tbl_ggplot_upper$ViralProtein,
+	levels = c("M", "Nsp1", "Nsp4", "Nsp6", "Nsp7", "Nsp8", "Nsp11",
+	"Nsp13", "Nsp14", "Orf3b", "Orf6", "Orf7a", "Orf8", "Orf9c", "Orf10"))
+
+plot <- ggplot(tbl_ggplot_upper, aes(y=Description, x=ViralProtein, fill=countfactor)) + 
+	geom_tile(colour = "black", size = 0.40) +
 	scale_fill_viridis_c() +
-	labs(title="", x ="", y = "") +
-	# scale_fill_gradientn(colors = my_colors, na.value="white") +
-	scale_fill_gradientn(colors = colorRampPalette(brewer.pal(9, "Blues"))(25)) +
-	# scale_fill_gradient(low = "white", high = "darkblue")
-	labs(fill='-log10(adjusted p-value)') +
+	# theme_linedraw() +
+	labs(title = "", x = "", y = "", fill=expression("-log"["10"]*"(adjusted p-value)")) +
+	scale_fill_manual(
+		values = colorRampPalette(rev(brewer.pal(9, "Blues")))(5)
+		) +
 	theme(
+		panel.background = element_blank(), 
 		axis.ticks= element_blank(),
-		axis.text.x = element_text(vjust=0.7, angle=90),
-		legend.key.size = unit(0.5, "cm"),
-		legend.title = element_text(size = 7, face="bold"),
+		# legend.key.size = unit(1, 'lines'),
+		legend.key.size = unit(0.4, "cm"),
+		# legend.spacing = unit(5, 'cm'),
+		legend.title = element_text(size = 7, face="bold", colour="black"), 
 		legend.text = element_text(size = 7),
-		# legend.position = c(-1.9, 0.69),
-		panel.background = element_blank()
-	)
+		axis.text.x = element_text(size = 8, vjust=0.7, angle=90, colour="black"),
+		axis.text.y = element_text(size = 8, colour="black"),
+		panel.border = element_rect(colour = "black", fill=NA, size=1.2)
+	) 
 
 ggsave(
 	plot, 
 	file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Heatmap/GO analysis parent term.png", 
 	width = 18.5, 
-	height = 24.5, 
+	height = 30.5, 
 	units = "cm"
 	)
 
@@ -252,17 +288,21 @@ tbl_top_ggplot_input <- tbl_top_ggplot %>%
 	) %>%
 	mutate(countfactor=factor(as.character(countfactor), levels=rev(levels(countfactor))))
 
-tbl_top_ggplot_input %>% arrange(logpadjust) %>% count(logpadjust) %>% unique()
+tbl_top_ggplot_upper <- tbl_top_ggplot_input %>% 
+	mutate(ViralProtein = first_to_upper(ViralProtein)) %>%
+	mutate(Description = first_to_upper(Description)) %>%
+	mutate(Description = str_replace(Description, "TRNA", "tRNA")) %>%
+	mutate(Description = str_replace(Description, "NcRNA", "ncRNA"))
 
-tbl_top_ggplot_input$ViralProtein <- factor(tbl_top_ggplot_input$ViralProtein,
-	levels = c("M", "nsp1", "nsp4", "nsp6", "nsp7", "nsp8", "nsp11",
-	"nsp13", "nsp14", "orf3b", "orf6", "orf7a", "orf8", "orf9c", "orf10"))
+tbl_top_ggplot_upper$ViralProtein <- factor(tbl_top_ggplot_upper$ViralProtein,
+	levels = c("M", "Nsp1", "Nsp4", "Nsp6", "Nsp7", "Nsp8", "Nsp11",
+	"Nsp13", "Nsp14", "Orf3b", "Orf6", "Orf7a", "Orf8", "Orf9c", "Orf10"))
 
-plot <- ggplot(tbl_top_ggplot_input, aes(y=Description, x=ViralProtein, fill=countfactor)) + 
+plot <- ggplot(tbl_top_ggplot_upper, aes(y=Description, x=ViralProtein, fill=countfactor)) + 
 	geom_tile(colour = "black", size = 0.40) +
 	scale_fill_viridis_c() +
 	theme_linedraw() +
-	labs(title = "", x = "", y = "", fill = "-log10(adjusted p-value)") +
+	labs(title = "", x = "", y = "", fill=expression("-log"["10"]*"(adjusted p-value)")) +
 	scale_fill_manual(
 		values = colorRampPalette(rev(brewer.pal(9, "Blues")))(5)
 		) +
