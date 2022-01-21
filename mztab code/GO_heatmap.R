@@ -1,14 +1,10 @@
 library(data.table)
 library(tidyverse)
-library(annotables)			#mapping
+library(annotables)			# Mapping
 library(clusterProfiler)
 library(org.Hs.eg.db)
-# library(msigdbr)
-# library(ComplexHeatmap)
 library(RColorBrewer)
-# library(GOxploreR)
 library(rrvgo)
-# library(goSTAG)
 library(ComplexHeatmap)
 
 # Load data ------------------------------------------------------------------------------------------------------------------------
@@ -65,6 +61,9 @@ for(bait in Baits) {
 	tbl_go_result <- rbind(tbl_go_result, tbl_enrichgo_result)
 }
 
+tbl_go_result_05 <- tbl_go_result
+tbl_go_result <- tbl_go_result_01
+
 # Simplify the GO enrichment results --------------------------- (rrvgo) ----------------------------------------------------------
 
 #	Reduce GO terms 
@@ -82,11 +81,13 @@ df_reduced_terms <- reduceSimMatrix(
 	orgdb="org.Hs.eg.db"
 	)
 plot_scatter <- scatterPlot(matrix_similarity, df_reduced_terms)
+df_reduced_terms %>% as_tibble %>% dplyr::select(term, parentTerm, score, size) %>% 
+	arrange(desc(parentTerm)) %>%
+	print(n=80) 
 
-#	Reduce the GO terms for each viral protein
+#	Reduce the GO terms for each viral protein ---------------------------------------------------------------------------------------
 tbl_reduced_terms <- data.frame() %>% as_tibble
 Baits <- tbl_go_result %>% filter(!ViralProtein == "orf7a") %>% dplyr::pull(ViralProtein) %>% unique()
-Baits<- c("nsp11", "orf3b")
 for (bait in Baits) {
 	tbl_go_bait <- tbl_go_result %>% filter(ViralProtein==bait)
 	matrix_similarity_bait <- calculateSimMatrix(
@@ -110,6 +111,8 @@ for (bait in Baits) {
 	tbl_reduced_terms <- rbind(tbl_reduced_terms, tbl_reduced_terms_bait)
 }
 
+tbl_reduced_terms %>% dplyr::pull(parentTerm) %>% unique()
+
 tbl_reduced_terms_orf7a <- data.frame(
 	ID = "GO:0042273", 
 	parentID = "GO:0042273",
@@ -122,91 +125,80 @@ tbl_reduced_terms_orf7a <- data.frame(
 tbl_reduced_go_result <- rbind(tbl_reduced_terms, tbl_reduced_terms_orf7a) %>%
 	merge(tbl_go_result) %>% 
 	as_tibble %>%
-	filter(parentTerm == Description)
-	# dplyr::select(parentTerm, ViralProtein, everything()) %>% 
-	# unite(VP, parentTerm:ViralProtein, sep ="_", remove=FALSE) %>% 
-	# group_by(VP) %>% mutate(avg_value = mean(p.adjust)) %>%
-	# ungroup() %>% dplyr::select(-VP)
+	group_by(parentTerm) %>% 
+	top_n(2, score) %>%
+	mutate(score_max = max(score)) %>%
+	mutate(score_diff = score_max - score) %>%
+	filter(score_diff == 0) %>%
+	top_n(1, size) %>%
+	ungroup() 
 
-
-# merge(df_reduced_terms, tbl_go_result) %>% 
-# 	as_tibble %>% 
-# 	filter(parentTerm == "ncRNA metabolic process") %>%
-# 	dplyr::select(Description, ViralProtein, Count) %>% unique() %>%
-# 	print(n=400)
+rbind(tbl_reduced_terms, tbl_reduced_terms_orf7a) %>%
+	merge(tbl_go_result) %>% 
+	as_tibble %>%
+	# filter(Description == "rRNA processing") %>%
+	# filter(parentTerm == "ncRNA metabolic process") %>%
+	filter(parentTerm == "tRNA-containing ribonucleoprotein complex export from nucleus") %>%
+	# filter(parentTerm == "granulocyte activation") %>%
+	# filter(parentTerm == "oxidative phosphorylation") %>%
+	# filter(parentTerm == "tRNA transport") %>%
+	dplyr::select(score, size, Description) %>%
+	unique()
 
 # Get the GO term order --------------------------------------------------------------------------------------------------------------
 #	Create similarity matrix
-matrix_parent_similarity <- calculateSimMatrix(
-	tbl_reduced_go_result$parentID,
+matrix_go_similarity <- calculateSimMatrix(
+	tbl_reduced_go_result$ID,
 	orgdb="org.Hs.eg.db",
 	ont="BP",
 	method="Rel"
 	)
 
 #	Cluster the GO terms based on similarity
-plot_parent_terms <- Heatmap(
-	matrix_parent_similarity,
+plot_go_terms <- Heatmap(
+	matrix_go_similarity,
 	clustering_method_rows = "ward.D",
 	clustering_method_columns = "ward.D"
 	)
 
 #	Get the GO terms from the rownames
-df_parent_terms <- matrix_parent_similarity[, 0] %>% as.data.frame
-parent_terms <- rownames(df_parent_terms)
-rownames(df_parent_terms) <- NULL
-tbl_parent_terms <- cbind(parent_terms, df_parent_terms) %>% 
+df_go_terms <- matrix_go_similarity[, 0] %>% as.data.frame
+go_terms <- rownames(df_go_terms)
+rownames(df_go_terms) <- NULL
+tbl_go_terms <- cbind(go_terms, df_go_terms) %>% 
 	as_tibble %>% 
 	mutate(index = 1:n())
 
 #	Get the order of the GO terms
-ht_list = draw(plot_parent_terms)
+ht_list = draw(plot_go_terms)
 index_order <- row_order(ht_list)
 tbl_index_order <- data.frame(index_order = index_order) %>% 
 	as_tibble %>%
-	mutate(index = as.integer(tbl_parent_terms$index))
+	mutate(index = as.integer(tbl_go_terms$index))
 
 #	Map the GO terms to the order
-tbl_parent_order <- merge(tbl_index_order, tbl_parent_terms) %>% 
-	as_tibble %>% rename(parent_terms = "parentID")
+tbl_go_order <- merge(tbl_index_order, tbl_go_terms) %>% 
+	as_tibble %>% rename(go_terms = "ID")
 
 
 # Plot the GO terms -----------------------------------------------------------------------------------------------------------------
 tbl_ggplot <- data.frame()
 Baits <- tbl_reduced_go_result %>% dplyr::pull(ViralProtein) %>% unique()
-tbl_all_descriptions <- tbl_reduced_go_result %>% dplyr::select(Description, parentID) %>% unique
+tbl_all_descriptions <- tbl_reduced_go_result %>% dplyr::select(Description, ID) %>% unique
 for (bait in Baits) {
 	tbl_simple_go_bait <- tbl_reduced_go_result %>% filter(ViralProtein==bait) %>% dplyr::select(-ViralProtein)
 	tbl_description_bait <- tbl_all_descriptions %>% left_join(tbl_simple_go_bait) %>% mutate(ViralProtein = bait)
 	tbl_ggplot <- rbind(tbl_ggplot, tbl_description_bait)
 }
 
-rbind(tbl_reduced_terms, tbl_reduced_terms_orf7a) %>%
-	merge(tbl_go_result) %>% 
-	as_tibble %>%
-	filter(parentTerm == "tRNA transport") %>%
-	# filter(parentTerm == "granulocyte activation") %>%
-	# filter(parentTerm == "oxidative phosphorylation") %>%
-	# filter(parentTerm == "tRNA transport") %>%
-	unique() %>%
-	dplyr::select(Description, ViralProtein, size, score, Count)
-
 tbl_ggplot_input <- tbl_ggplot %>% 
-	merge(tbl_parent_order) %>%
+	merge(tbl_go_order) %>%
 	as_tibble %>%
 	arrange(index_order) %>%
 	mutate(logpadjust = -log10(p.adjust)) %>% 
-	dplyr::select(Description, logpadjust, ViralProtein, parentID, index_order) %>% 
+	dplyr::select(Description, logpadjust, ViralProtein, ID, index_order) %>% 
 	unique() %>% 
-	replace(is.na(.), 0) %>%
-	mutate(
-		countfactor = cut(
-			logpadjust,
-			breaks = c(-1, 0, 3, 6, 9, max(logpadjust)),
-			labels = c("0", "0-3", "3-6", "6-9", ">9")
-			)
-	) %>%
-	mutate(countfactor=factor(as.character(countfactor), levels=rev(levels(countfactor))))
+	replace(is.na(.), 0)
 
 first_to_upper <- function(x) {
   substr(x, 1, 1) <- toupper(substr(x, 1, 1))
@@ -219,17 +211,19 @@ tbl_ggplot_upper <- tbl_ggplot_input %>%
 	mutate(Description = str_replace(Description, "TRNA", "tRNA")) %>%
 	mutate(Description = str_replace(Description, "NcRNA", "ncRNA"))
 
+tbl_ggplot_input %>% pull(ViralProtein) %>% unique()
 tbl_ggplot_upper$ViralProtein <- factor(tbl_ggplot_upper$ViralProtein,
-	levels = c("M", "Nsp1", "Nsp4", "Nsp6", "Nsp7", "Nsp8", "Nsp11",
-	"Nsp13", "Nsp14", "Orf3b", "Orf6", "Orf7a", "Orf8", "Orf9c", "Orf10"))
+	levels = c("M", "N", "S", "Nsp1", "Nsp4", "Nsp6", "Nsp7", "Nsp8", "Nsp10", "Nsp11",
+	"Nsp13", "Nsp14", "Orf3a", "Orf3b", "Orf6", "Orf7a", "Orf8", "Orf9c", "Orf10"))
 
-plot <- ggplot(tbl_ggplot_upper, aes(y=Description, x=ViralProtein, fill=countfactor)) + 
+plot <- ggplot(tbl_ggplot_upper, aes(y=Description, x=ViralProtein, fill=logpadjust)) + 
 	geom_tile(colour = "black", size = 0.40) +
 	scale_fill_viridis_c() +
-	# theme_linedraw() +
 	labs(title = "", x = "", y = "", fill=expression("-log"["10"]*"(adjusted p-value)")) +
-	scale_fill_manual(
-		values = colorRampPalette(rev(brewer.pal(9, "Blues")))(5)
+	scale_fill_gradientn(
+		colors = colorRampPalette(brewer.pal(8, "Blues"))(25),
+		limits = c(0,10),
+		na.value = "#08306C"
 		) +
 	theme(
 		panel.background = element_blank(), 
@@ -246,15 +240,15 @@ plot <- ggplot(tbl_ggplot_upper, aes(y=Description, x=ViralProtein, fill=countfa
 
 ggsave(
 	plot, 
-	file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Heatmap/GO analysis parent term.png", 
+	file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Heatmap/GO analysis clustered terms.png", 
 	width = 18.5, 
-	height = 30.5, 
+	height = 25, 
 	units = "cm"
 	)
 
 # Select the top GO terms ----------------------------------------------------------------------------------------------------
 tbl_top_go_result <- tbl_reduced_go_result %>%
-	merge(tbl_parent_order) %>%
+	merge(tbl_go_order) %>%
 	arrange(index_order) %>%
 	group_by(ViralProtein) %>% 
 	top_n(-1, p.adjust) %>%
@@ -263,7 +257,7 @@ tbl_top_go_result <- tbl_reduced_go_result %>%
 # Heatmap for the top GO terms -----------------------------------------------------------------------------------------------
 tbl_top_ggplot <- data.frame()
 Baits <- tbl_top_go_result %>% dplyr::pull(ViralProtein) %>% unique()
-tbl_all_descriptions <- tbl_top_go_result %>% dplyr::select(Description, parentID, index_order) %>% unique()
+tbl_all_descriptions <- tbl_top_go_result %>% dplyr::select(Description, ID, index_order) %>% unique()
 for (bait in Baits) {
 	tbl_simple_go_bait <- tbl_top_go_result %>% 
 		filter(ViralProtein == bait) %>% 
@@ -276,17 +270,9 @@ for (bait in Baits) {
 
 tbl_top_ggplot_input <- tbl_top_ggplot %>% 
 	mutate(logpadjust = -log10(p.adjust)) %>% 
-	dplyr::select(Description, logpadjust, ViralProtein, parentID, index_order) %>% 
+	dplyr::select(Description, logpadjust, ViralProtein, ID, index_order) %>% 
 	unique() %>% 
-	replace(is.na(.), 0) %>%
-	mutate(
-		countfactor = cut(
-			logpadjust,
-			breaks = c(-1, 0, 3, 6, 9, max(logpadjust)),
-			labels = c("0", "0-3", "3-6", "6-9", ">9")
-			)
-	) %>%
-	mutate(countfactor=factor(as.character(countfactor), levels=rev(levels(countfactor))))
+	replace(is.na(.), 0)
 
 tbl_top_ggplot_upper <- tbl_top_ggplot_input %>% 
 	mutate(ViralProtein = first_to_upper(ViralProtein)) %>%
@@ -298,31 +284,30 @@ tbl_top_ggplot_upper$ViralProtein <- factor(tbl_top_ggplot_upper$ViralProtein,
 	levels = c("M", "Nsp1", "Nsp4", "Nsp6", "Nsp7", "Nsp8", "Nsp11",
 	"Nsp13", "Nsp14", "Orf3b", "Orf6", "Orf7a", "Orf8", "Orf9c", "Orf10"))
 
-plot <- ggplot(tbl_top_ggplot_upper, aes(y=Description, x=ViralProtein, fill=countfactor)) + 
+plot <- ggplot(tbl_top_ggplot_upper, aes(y=Description, x=ViralProtein, fill=logpadjust)) + 
 	geom_tile(colour = "black", size = 0.40) +
-	scale_fill_viridis_c() +
-	theme_linedraw() +
 	labs(title = "", x = "", y = "", fill=expression("-log"["10"]*"(adjusted p-value)")) +
-	scale_fill_manual(
-		values = colorRampPalette(rev(brewer.pal(9, "Blues")))(5)
+	scale_fill_gradientn(
+		colors = colorRampPalette(brewer.pal(8, "Blues"))(25),
+		limits = c(0,10),
+		na.value = "#08306C"
 		) +
 	theme(
 		panel.background = element_blank(), 
 		axis.ticks= element_blank(),
-		# legend.key.size = unit(1, 'lines'),
 		legend.key.size = unit(0.4, "cm"),
-		# legend.spacing = unit(5, 'cm'),
 		legend.title = element_text(size = 7, face="bold", colour="black"), 
 		legend.text = element_text(size = 7),
 		axis.text.x = element_text(size = 8, vjust=0.7, angle=90, colour="black"),
-		axis.text.y = element_text(size = 8, colour="black")
+		axis.text.y = element_text(size = 8, colour="black"),
+		panel.border = element_rect(colour = "black", fill=NA, size=1.2)
 	) 
 
 ggsave(
 	plot, 
 	file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Heatmap/GO analysis top terms.png", 
 	width = 18.5, 
-	height = 11, 
+	height = 9, 
 	units = "cm"
 	)
 
