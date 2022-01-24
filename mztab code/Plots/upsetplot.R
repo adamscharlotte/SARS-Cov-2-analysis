@@ -174,44 +174,44 @@ pdf(file = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Upset/PPI
 ss = set_size(matrix_ppi_combination)
 cs = comb_size(matrix_ppi_combination)
 ht = UpSet(matrix_ppi_combination, 
-    set_order = order(ss),
-    comb_order = order(comb_degree(matrix_ppi_combination), -cs),
-    top_annotation = HeatmapAnnotation(
-        "PPI intersection size" = anno_barplot(cs, 
-            ylim = c(0, max(cs)*1.1),
-            border = FALSE, 
-            gp = gpar(fill = "black"), 
-            height = unit(4, "cm")
-        ), 
+	set_order = order(ss),
+	comb_order = order(comb_degree(matrix_ppi_combination), -cs),
+	top_annotation = HeatmapAnnotation(
+		"PPI intersection size" = anno_barplot(cs, 
+			ylim = c(0, max(cs)*1.1),
+			border = FALSE, 
+			gp = gpar(fill = "black"), 
+			height = unit(4, "cm")
+		), 
 		annotation_name_gp= gpar(fontsize = 9),
-        annotation_name_side = "left", 
-        annotation_name_rot = 90),
-    left_annotation = rowAnnotation(
-        "Set size" = anno_barplot(-ss, 
-            baseline = 0,
-            axis_param = list(
-                at = c(0, -100, -200, -300),
-                labels = c(0, 100, 200, 300),
-                labels_rot = 0),
-            border = FALSE, 
-            gp = gpar(fill = "black"), 
-            width = unit(4, "cm")),
+		annotation_name_side = "left", 
+		annotation_name_rot = 90),
+	left_annotation = rowAnnotation(
+		"Set size" = anno_barplot(-ss, 
+			baseline = 0,
+			axis_param = list(
+				at = c(0, -100, -200, -300),
+				labels = c(0, 100, 200, 300),
+				labels_rot = 0),
+			border = FALSE, 
+			gp = gpar(fill = "black"), 
+			width = unit(4, "cm")),
 		set_name = anno_text(set_name(matrix_ppi_combination), 
-            location = 0.5, 
-            just = "center",
-            width = max_text_width(set_name(matrix_ppi_combination)) + unit(0.01, "mm"),
+			location = 0.5, 
+			just = "center",
+			width = max_text_width(set_name(matrix_ppi_combination)) + unit(0.01, "mm"),
 			gp= gpar(fontsize = 8)
 			),
 			annotation_name_gp= gpar(fontsize = 9)
 			),
-    right_annotation = NULL,
-    show_row_names = FALSE)
+	right_annotation = NULL,
+	show_row_names = FALSE)
 
 ht = draw(ht)
 od = column_order(ht)
 decorate_annotation("PPI intersection size", {
-    grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
-        default.units = "native", just = c("left", "bottom"), 
-        gp = gpar(fontsize = 6, col = "#404040"), rot = 45)
+	grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+		default.units = "native", just = c("left", "bottom"), 
+		gp = gpar(fontsize = 6, col = "#404040"), rot = 45)
 })
 dev.off()
