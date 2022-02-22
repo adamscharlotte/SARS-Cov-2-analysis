@@ -149,6 +149,11 @@ list_Samavarchi <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Oth
 	filter(V1 %in% list_annsolo) %>%
 	pull(V1) %>% 
 	unique()
+list_Liu <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/Liu/Liu_bp.txt", header=FALSE) %>% 
+	as_tibble %>% 
+	filter(V1 %in% list_annsolo) %>%
+	pull(V1) %>% 
+	unique()
 
 #
 #	Create a binary matrix -----------------------------------------------------------------------------------------------------------
@@ -160,17 +165,18 @@ list_ppi <- list(
 	"Stukalov et al." = list_Stukalov,
 	"St-Germain et al." = list_Germain,
 	"Laurent et al." = list_Laurent,
-	"Samavarchi-Tehrani et al." = list_Samavarchi
+	"Samavarchi-Tehrani et al." = list_Samavarchi,
+	"Liu et al." = list_Liu
 )
 matrix_ppi <- list_to_matrix(list_ppi)
 
 #	Create a combinarion matrix ------------------------------------------------------------------------------------------------------
-matrix_ppi_combination <- make_comb_mat(matrix_ppi, top_n_sets = 8) # mode = "intersect")
+matrix_ppi_combination <- make_comb_mat(matrix_ppi, top_n_sets = 9) # mode = "intersect")
 set_size(matrix_ppi_combination)
 set_name(matrix_ppi_combination)
 matrix_ppi_combination <- matrix_ppi_combination[comb_degree(matrix_ppi_combination) > 0]
 
-pdf(file = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Upset/PPI other studies.pdf", height = 3.2, width = 10)
+pdf(file = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Upset/PPI other studies.pdf", height = 3.4, width = 10)
 ss = set_size(matrix_ppi_combination)
 cs = comb_size(matrix_ppi_combination)
 ht = UpSet(matrix_ppi_combination, 
@@ -211,8 +217,8 @@ ht = draw(ht)
 od = column_order(ht)
 decorate_annotation("PPI intersection size", {
 	grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
-		default.units = "native", just = c("left", "bottom"), 
-		gp = gpar(fontsize = 6, col = "#404040"), rot = 45)
+		default.units = "native", just = c("center", "bottom"), 
+		gp = gpar(fontsize = 6, col = "#404040"))
 })
 dev.off()
 
@@ -330,14 +336,14 @@ set_name(matrix_ub_site_combination)
 matrix_ub_site_combination <- matrix_ub_site_combination[comb_degree(matrix_ub_site_combination) > 0]
 
 #	Plot upset
-pdf(file = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Upset/Ub-sites.pdf", height = 3.2, width = 4.5)
+pdf(file = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Upset/Ub-sites.pdf", height = 3, width = 3.5)
 ss = set_size(matrix_ub_site_combination)
 cs = comb_size(matrix_ub_site_combination)
 ht = UpSet(matrix_ub_site_combination, 
 	set_order = order(ss),
 	comb_order = order(comb_degree(matrix_ub_site_combination), -cs),
 	top_annotation = HeatmapAnnotation(
-		"Ubiquitination intersection size" = anno_barplot(cs, 
+		"Intersection size" = anno_barplot(cs, 
 			ylim = c(0, max(cs)*1.1),
 			border = FALSE, 
 			gp = gpar(fill = "black"), 
@@ -350,8 +356,8 @@ ht = UpSet(matrix_ub_site_combination,
 		"Set size" = anno_barplot(-ss, 
 			baseline = 0,
 			axis_param = list(
-				at = c(0, -50, -100, -150),
-				labels = c(0, 50, 100, 150),
+				at = c(0, -50, -100),
+				labels = c(0, 50, 100),
 				labels_rot = 0),
 			border = FALSE, 
 			gp = gpar(fill = "black"), 
@@ -369,7 +375,7 @@ ht = UpSet(matrix_ub_site_combination,
 
 ht = draw(ht)
 od = column_order(ht)
-decorate_annotation("Ubiquitination intersection size", {
+decorate_annotation("Intersection size", {
 	grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
 		default.units = "native", just = c("center", "bottom"), 
 		gp = gpar(fontsize = 6, col = "#404040"))
