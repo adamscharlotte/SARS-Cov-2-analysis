@@ -217,6 +217,24 @@ output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/HCIP/BioID/Sa
 fwrite(Samavarchi_bp, paste(output_path, "Samavarchi_bp.txt", sep=""), col.names = FALSE)
 fwrite(Samavarchi_gn, paste(output_path, "Samavarchi_gn.txt", sep=""), col.names = FALSE)
 
+#   Load the Liu et al. results
+Liu <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other\ studies/Liu/Liu.txt", sep= "\t") %>% as_tibble
+Liu %>% select(OrganismNameInteractorA, OrganismNameInteractorB) %>% unique
+Liu_bp <- Liu %>% 
+	filter(OrganismNameInteractorA == "Severeacuterespiratorysyndromecoronavirus2") %>%
+	filter(OrganismNameInteractorB == "Homosapiens") %>%
+	select(OfficialSymbolInteractorA, OfficialSymbolInteractorB) %>% 
+	mutate(OfficialSymbolInteractorA = str_replace(OfficialSymbolInteractorA,"orf9c","orf9c(protein14)")) %>%
+	unite(BP, OfficialSymbolInteractorA:OfficialSymbolInteractorB ,sep ="_", remove=TRUE)
+Liu_gn <- Liu %>% 
+	filter(OrganismNameInteractorA == "Severeacuterespiratorysyndromecoronavirus2") %>%
+	filter(OrganismNameInteractorB == "Homosapiens") %>%
+	select(OfficialSymbolInteractorB)
+
+output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other\ studies/Liu/"
+fwrite(Liu_bp, paste(output_path, "Liu_bp.txt", sep=""), col.names = FALSE)
+fwrite(Liu_gn, paste(output_path, "Liu_gn.txt", sep=""), col.names = FALSE)
+
 #	Create the venn diagram
 venn <- draw.pairwise.venn(332, 375, 164,
 	category = rep(c("Gordon et al.", "ANN-SoLo")), cex = 2, cat.cex = 2,
