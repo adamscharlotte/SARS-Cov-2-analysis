@@ -41,7 +41,7 @@ def set_matching_peaks(library_spectrum, query_spectrum):
 
 # Read the mzTab file.
 metadata = {}
-mztabFile = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/mztab/" + args.Filename + ".mztab"
+mztabFile = "/Users/adams/Projects/SARS-CoV-2/Data/Workspace/mztab/" + args.Filename + ".mztab"
 with open(mztabFile) as f_mztab:
     for line in f_mztab:
         line_split = line.strip().split('\t')
@@ -149,5 +149,5 @@ ax.text(0.5, 1.02,  f'Precursor ${txt}$ (top): {query_spectrum.precursor_mz:.4f}
 		horizontalalignment='center', verticalalignment='bottom',
 		fontsize='large', transform=ax.transAxes)
 
-plt.savefig("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Mirror/SNO/"f'{query_id}.png', dpi=300, bbox_inches='tight')
+plt.savefig("/Users/adams/Projects/SARS-CoV-2/Data/Results/Figures/Mirror/SNO/"f'{query_id}.png', dpi=300, bbox_inches='tight')
 plt.close()
