@@ -3,7 +3,7 @@ Open modification searching of SARS-CoV-2–human protein interaction data revea
 
 The preprint is available on **DOI:** 
 
-Description on the code
+Description of the code
 -------
 
 
