@@ -92,6 +92,18 @@ SARS_mod <- merge(psm_mod, annotation, by.x = "bait.x", by.y = "fileID") %>%
 	filter(name=="SARS") %>%
 	mutate(prot=str_replace(prot,"Protein14", "protein14"))
 
+colnames(SARS_mod)
+tbl_sars_modifications <- SARS_mod %>% filter(prot %in% Condition) %>%
+	mutate(rounded_mass_diff = round(mass_diff, 3)) %>%
+	select(PSM_ID, rounded_mass_diff, mod) %>% 
+	unique() %>%
+	add_count(rounded_mass_diff) %>%
+	select(-PSM_ID) %>% unique() %>%
+	arrange(desc(rounded_mass_diff)) %>%
+	filter(n >= 10)
+
+fwrite(tbl_sars_modifications, "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/PTM/mass differences on SARS-CoV-2.csv", append = FALSE, col.names = TRUE)
+
 #	Mass difference histogram
 psm_mod_his <- SARS_mod %>% select(PSM_ID, mod, mod_mass, mass_diff) %>% unique %>%
 	mutate(mass_diff_rounded = round(mass_diff, digits = 0)) %>% filter(!mass_diff_rounded==0)
