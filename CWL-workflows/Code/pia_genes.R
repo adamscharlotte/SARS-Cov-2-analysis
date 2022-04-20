@@ -6,16 +6,13 @@ args <- commandArgs(trailingOnly = TRUE)
 path <- args[1]
 file <- args[2]  
 
-# path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/"
-# file <- "qx017077"
-
 input_path <- paste(path, "proteins/", file, ".csv", sep = "")
 output_path <- paste(path, "genes/", file, ".csv", sep = "")
 fasta_headers <- paste(path, "fasta/fasta_headers.csv", sep = "")
-annotation_path <- paste(path, "names/Gordon1_annotation.txt", sep = "")
+annotation_path <- paste(path, "annotation.txt", sep = "")
 
 #	read protein file
-pia_proteins = fread(input_path, sep = ',') %>% as_tibble
+tbl_proteins = fread(input_path, sep = ',') %>% as_tibble
 
 #   add gene_names
 unmapped_headers <- fread(fasta_headers, header = FALSE) %>% as_tibble
