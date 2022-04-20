@@ -170,8 +170,17 @@ list_ppi <- list(
 )
 matrix_ppi <- list_to_matrix(list_ppi)
 
+list_other <- unique(c(list_Li, list_Chen, list_Stukalov, list_Germain, list_Laurent, list_Samavarchi, list_Liu))
+list_ppi <- list(
+	"Original analysis" = list_gordon,
+	"Reanalysis" = list_annsolo,
+	"Other studies" = list_other 
+)
+matrix_ppi <- list_to_matrix(list_ppi)
+
+
 #	Create a combinarion matrix ------------------------------------------------------------------------------------------------------
-matrix_ppi_combination <- make_comb_mat(matrix_ppi, top_n_sets = 9) # mode = "intersect")
+matrix_ppi_combination <- make_comb_mat(matrix_ppi, top_n_sets = 3) # mode = "intersect")
 set_size(matrix_ppi_combination)
 set_name(matrix_ppi_combination)
 matrix_ppi_combination <- matrix_ppi_combination[comb_degree(matrix_ppi_combination) > 0]
@@ -206,6 +215,52 @@ ht = UpSet(matrix_ppi_combination,
 			location = 0.5, 
 			just = "center",
 			width = max_text_width(set_name(matrix_ppi_combination)) + unit(-11, "mm"),
+			gp= gpar(fontsize = 8)
+			),
+			annotation_name_gp= gpar(fontsize = 9)
+			),
+	right_annotation = NULL,
+	show_row_names = FALSE)
+
+ht = draw(ht)
+od = column_order(ht)
+decorate_annotation("PPI intersection size", {
+	grid.text(cs[od], x = seq_along(cs), y = unit(cs[od], "native") + unit(2, "pt"), 
+		default.units = "native", just = c("center", "bottom"), 
+		gp = gpar(fontsize = 6, col = "#404040"))
+})
+dev.off()
+
+pdf(file = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Upset/PPI other studies - small.pdf", height = 3.4, width = 4)
+ss = set_size(matrix_ppi_combination)
+cs = comb_size(matrix_ppi_combination)
+ht = UpSet(matrix_ppi_combination, 
+	set_order = order(ss),
+	comb_order = order(comb_degree(matrix_ppi_combination), -cs),
+	top_annotation = HeatmapAnnotation(
+		"PPI intersection size" = anno_barplot(cs, 
+			ylim = c(0, max(cs)*1.1),
+			border = FALSE, 
+			gp = gpar(fill = "black"), 
+			height = unit(4, "cm")
+		), 
+		annotation_name_gp= gpar(fontsize = 9),
+		annotation_name_side = "left", 
+		annotation_name_rot = 90),
+	left_annotation = rowAnnotation(
+		"Set size" = anno_barplot(-ss, 
+			baseline = 0,
+			axis_param = list(
+				at = c(0, -100, -200, -300),
+				labels = c(0, 100, 200, 300),
+				labels_rot = 0),
+			border = FALSE, 
+			gp = gpar(fill = "black"), 
+			width = unit(3, "cm")),
+		set_name = anno_text(set_name(matrix_ppi_combination), 
+			location = 0.5, 
+			just = "center",
+			width = max_text_width(set_name(matrix_ppi_combination)) + unit(-1, "mm"),
 			gp= gpar(fontsize = 8)
 			),
 			annotation_name_gp= gpar(fontsize = 9)
