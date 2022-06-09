@@ -15,7 +15,7 @@ For the protein inference workflow **pandas** and **pyopenms** need to be instal
 conda install -c anaconda pandas
 pip install pyopenms
 ```
-You will also need to install OpenMS <https://www.openms.de/download/openms-binaries/> and PIA <https://github.com/mpc-bioinformatics/pia/releases/tag/1.4.4>.
+You will also need to install OpenMS <https://abibuilder.informatik.uni-tuebingen.de/archive/openms/OpenMSInstaller/release/> and PIA <https://github.com/mpc-bioinformatics/pia/releases/tag/1.4.4>.
 
 Here is an example of the arguments needed to run the protein inference workflow:
 ```
