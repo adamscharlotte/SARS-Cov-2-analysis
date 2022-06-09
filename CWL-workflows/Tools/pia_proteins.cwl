@@ -17,7 +17,7 @@ inputs:
         inputBinding:
             position: 2
 
-    bait:
+    filename:
         type: string
         inputBinding:
             position: 3
@@ -26,7 +26,7 @@ outputs:
     proteins_csv:
         type: File
         outputBinding: 
-            glob: $(inputs.bait).csv
+            glob: $(inputs.filename).csv
 
 #    ANN-SoLo_identifications:
  #       type: stdout

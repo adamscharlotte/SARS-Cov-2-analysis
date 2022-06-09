@@ -6,11 +6,10 @@ import argparse, pathlib
 
 parser = argparse.ArgumentParser()
 parser.add_argument('mztab', type=pathlib.Path)
-parser.add_argument('csv', type=pathlib.Path)
+parser.add_argument('filename', type=str)
 args = parser.parse_args()
 
-path = '/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/'
-output_path = args.csv
+output_path = args.filename
 
 with open (args.mztab,'r') as f:
 	outF = open(output_path, 'w')

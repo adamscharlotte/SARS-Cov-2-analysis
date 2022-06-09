@@ -1,5 +1,7 @@
 import pandas as pd
-import sys
+# import sys
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import pyopenms as pyms
 import argparse, pathlib
 

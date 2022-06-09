@@ -4,9 +4,10 @@ requirements:
     MultipleInputFeatureRequirement: {}
 
 inputs:
-    mztab_to_idxml_py: File  
+    mztab_to_idxml_py: File
     mztab: File
-    bait: string
+    idxml: string
+    filename: string
     fasta: File
     idxml_output: string
     missing_decoy_action:
@@ -36,7 +37,7 @@ inputs:
     mztab_to_csv_py: File
     pia_proteins_R: File
     # pia_genes_R: File
-    # bait: string    
+    # filename: string    
 
 outputs:
     pia_proteins:
@@ -52,7 +53,7 @@ steps:
         in:
             mztab_to_idxml_py: mztab_to_idxml_py
             mztab: mztab
-            bait: bait
+            idxml: idxml
         out:
             [idxml]
 
@@ -75,7 +76,7 @@ steps:
             cp: cp
             compiler: compiler
             idxml: peptide_indexer/idxml
-            bait: bait
+            filename: filename
             xml_output: xml_output
             name: name
         out:
@@ -86,7 +87,7 @@ steps:
         in: 
             jar: jar
             xml: pia_xml/xml
-            bait: bait
+            filename: filename
             fileType: fileType
             paramFile: paramFile
             proteinExport: proteinExport
@@ -99,7 +100,7 @@ steps:
         in:
             mztab_to_csv_py: mztab_to_csv_py
             mztab: pia_run/mztab
-            bait: bait
+            filename: filename
         out:
             [csv]
 
@@ -108,7 +109,7 @@ steps:
         in: 
             pia_proteins_R: pia_proteins_R
             csv: mztab_to_csv/csv
-            bait: bait
+            filename: filename
         out:
             [proteins_csv]
 
@@ -117,6 +118,6 @@ steps:
     #     in: 
     #         pia_genes_R: pia_genes_R
     #         proteins_csv: pia_proteins/proteins_csv
-    #         bait: bait
+    #         filename: filename
     #     out:
     #         [genes_csv]

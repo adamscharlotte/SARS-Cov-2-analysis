@@ -1,7 +1,7 @@
 cwlVersion: v1.0
 class: CommandLineTool
 
-baseCommand: [python3]
+baseCommand: [python]
 
 requirements:
  - class: InlineJavascriptRequirement
@@ -17,7 +17,7 @@ inputs:
         inputBinding:
             position: 2
 
-    bait:
+    idxml:
         type: string
         inputBinding:
             position: 3
@@ -26,7 +26,7 @@ outputs:
     idxml:
         type: File
         outputBinding: 
-            glob: $(inputs.bait).idxml
+            glob: $(inputs.idxml)
 #    tibbles:
  #       type: stdout
 #stdout: tibble.txt          #this will appear in the working directory

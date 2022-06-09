@@ -36,7 +36,7 @@ inputs:
         inputBinding:
             position: 5
 
-    bait:
+    filename:
         type: string
         inputBinding:
             position: 6
@@ -45,11 +45,11 @@ outputs:
     mztab:
         type: File
         outputBinding: 
-            glob: $(inputs.bait).mztab
+            glob: $(inputs.filename).mztab
     # csv:
     #     type: File
     #     outputBinding: 
-    #         glob: $(inputs.bait).csv
+    #         glob: $(inputs.filename).csv
 #    tibbles:
  #       type: stdout
 #stdout: tibble.txt          #this will appear in the working directory

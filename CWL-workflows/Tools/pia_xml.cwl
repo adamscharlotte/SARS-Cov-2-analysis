@@ -24,7 +24,7 @@ inputs:
             position: 3
             prefix: -infile
 
-    bait:
+    filename:
         type: string
         inputBinding:
             position: 4    
@@ -45,7 +45,7 @@ outputs:
     xml:
         type: File
         outputBinding: 
-            glob: $(inputs.bait).xml
+            glob: $(inputs.filename).xml
 #    tibbles:
  #       type: stdout
 #stdout: tibble.txt          #this will appear in the working directory
