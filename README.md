@@ -6,15 +6,21 @@ Description of the code
 -------
 **CWL workflows** were created to perform protein inference (ProteinInferenceWorkflow.cwl) and to map PTMs on observed mass differences (ModificationMappingWorkflow.cwl).
 They can be run by using cwltool <https://github.com/common-workflow-language/cwltool>.
-
 ```
 conda install -c conda-forge nodejs
 conda install -c conda-forge cwltool
 ```
-For example:
+For the protein inference workflow **pandas** and **pyopenms** need to be installed
 ```
-<cwltool Protein_Inference_workflow.cwl --mztab_to_idxml_py Code/mztab_to_idxml.py --mztab --fasta uniprot-proteome_homo_sapiens_reference_proteome_5_23_2016_sars_cov_2.fasta --idxml_output --cp pia-1.3.11.jar --compiler de.mpc.pia.intermediate.compiler.PIACompiler --bait --xml_output --jar pia-1.3.11.jar --paramFile --proteinExport --mztab_to_csv_py Code/mztab_to_protein_csv.py --pia_proteins_R Code/pia_proteins.R>
+conda install -c anaconda pandas
+pip install pyopenms
 ```
+You will also need to install OpenMS <https://www.openms.de/download/openms-binaries/> and PIA <https://github.com/mpc-bioinformatics/pia/releases/tag/1.4.4>.
+
+Here is an example of the arguments needed to run the protein inference workflow:
+```
+cwltool --outdir /proteins ProteinInferenceWorkflow.cwl --mztab_to_idxml_py Code/mztab_to_idxml.py --mztab test.mztab --filename test --fasta test.fasta --idxml_output test.idxml --cp /pia-1.3.11/pia-1.3.11.jar --compiler de.mpc.pia.intermediate.compiler.PIACompiler --idxml test.idxml --xml_output test.xml --jar /pia-1.3.11/pia-1.3.11.jar --paramFile /param/pia_pipe_SARS_v3.xml --proteinExport test.mztab --mztab_to_csv_py Code/mztab_to_protein_csv.py --pia_proteins_R Code/pia_proteins.R
+
 
 Additionally we created some code to perform some analyses such as a GO enrichment analysis and PPI filtering. These can be found under /Analysis-code.
 
