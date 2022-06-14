@@ -20,7 +20,7 @@ You will also need to install OpenMS <https://abibuilder.informatik.uni-tuebinge
 Here is an example of the arguments needed to run the protein inference workflow:
 ```
 cwltool --outdir /proteins ProteinInferenceWorkflow.cwl --mztab_to_idxml_py Code/mztab_to_idxml.py --mztab test.mztab --filename test --fasta test.fasta --idxml_output test.idxml --cp /pia-1.3.11/pia-1.3.11.jar --compiler de.mpc.pia.intermediate.compiler.PIACompiler --idxml test.idxml --xml_output test.xml --jar /pia-1.3.11/pia-1.3.11.jar --paramFile /param/pia_pipe_SARS_v3.xml --proteinExport test.mztab --mztab_to_csv_py Code/mztab_to_protein_csv.py --pia_proteins_R Code/pia_proteins.R
-
+```
 
 Additionally we created some code to perform some analyses such as a GO enrichment analysis and PPI filtering. These can be found under /Analysis-code.
 
