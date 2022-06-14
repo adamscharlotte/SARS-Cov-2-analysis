@@ -6,7 +6,8 @@ requirements:
 inputs:
     mztab_to_idxml_py: File
     mztab: File
-    bait: string
+    idxml: string
+    filename: string
     fasta: File
     idxml_output: string
     missing_decoy_action:
@@ -36,7 +37,7 @@ steps:
         in:
             mztab_to_idxml_py: mztab_to_idxml_py
             mztab: mztab
-            bait: bait
+            idxml: idxml
         out:
             [idxml]
 
@@ -66,7 +67,7 @@ steps:
         in: 
             mztab_to_csv_py: mztab_to_csv_py
             mztab: mztab_exporter/mztab
-            bait: bait
+            filename: filename
         out:
             [csv]
 
@@ -75,6 +76,6 @@ steps:
         in:
             psm_R: psm_R
             csv: mztab_to_csv/csv
-            bait: bait
+            filename: filename
         out:
             [csv]

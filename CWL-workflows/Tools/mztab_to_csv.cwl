@@ -26,7 +26,7 @@ outputs:
     csv:
         type: File
         outputBinding: 
-            glob: $(inputs.filename)*.csv
+            glob: $(inputs.filename).csv
 #    tibbles:
  #       type: stdout
 #stdout: tibble.txt          #this will appear in the working directory

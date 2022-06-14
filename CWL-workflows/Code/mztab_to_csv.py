@@ -9,7 +9,7 @@ parser.add_argument('mztab', type=pathlib.Path)
 parser.add_argument('filename', type=str)
 args = parser.parse_args()
 
-output_path = args.filename
+output_path = args.filename + '.csv'
 
 with open (args.mztab,'r') as f:
 	outF = open(output_path, 'w')

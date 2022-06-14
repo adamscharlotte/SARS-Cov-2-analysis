@@ -17,7 +17,7 @@ inputs:
         inputBinding:
             position: 2
 
-    bait:
+    filename:
         type: string
         inputBinding:
             position: 3
@@ -26,4 +26,4 @@ outputs:
     csv:
         type: File
         outputBinding: 
-            glob: $(inputs.bait).csv
+            glob: $(inputs.filename).csv
