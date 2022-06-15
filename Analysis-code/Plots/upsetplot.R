@@ -1,112 +1,5 @@
 library(tidyverse)
 library(data.table)
-library(UpSetR)
-
-#	Load PPI results -----------------------------------------------------------------------------------------------------------
-gordon_bp <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Gordon/gordon_bp.txt", header=FALSE) %>% 
-	as_tibble %>% 
-	rename(PPI=V1) %>% 
-	mutate(Study="Original analysis") %>%
-	unique()
-annsolo_bp <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/ANN-SoLo/annsolo_bp.txt", header=FALSE) %>% 
-	as_tibble %>% 
-	rename(PPI=V1) %>% 
-	mutate(Study="Reanalysis") %>%
-	unique()
-Li_bp <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Li/Li_bp.txt", header=FALSE) %>% 
-	as_tibble %>%
-	rename(PPI=V1) %>%
-	mutate(Study="Li et al.") %>%
-	unique()
-Chen_bp <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Chen/Chen_bp.txt", header=FALSE) %>% 
-	as_tibble %>% 
-	rename(PPI=V1) %>% 
-	mutate(Study="Chen et al.") %>%
-	unique()
-Stukalov_bp <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Stukalov/Stukalov_bp.txt", header=FALSE) %>% 
-	as_tibble %>% 
-	rename(PPI=V1) %>% 
-	mutate(Study="Stukalov et al.") %>%
-	unique()
-Germain_bp <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/BioID/Germain/Germain_bp.txt", header=FALSE) %>% 
-	as_tibble %>% 
-	rename(PPI=V1) %>% 
-	mutate(Study="St-Germain et al.") %>%
-	unique()
-Laurent_bp <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/BioID/Laurent/Laurent_bp.txt", header=FALSE) %>% 
-	as_tibble %>% 
-	rename(PPI=V1) %>% 
-	mutate(Study="Laurent et al.") %>%
-	unique()
-Samavarchi_bp <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/BioID/Samavarchi/Samavarchi_bp.txt", header=FALSE) %>% 
-	as_tibble %>% 
-	rename(PPI=V1) %>% 
-	mutate(Study="Samavarchi-Tehrani et al.") %>%
-	unique()
-
-#
-#	Create input for upsetplot --------------------------------------------------------------------------------------------------
-ppis_studies <- rbind(gordon_bp, annsolo_bp, Li_bp, Chen_bp, Stukalov_bp, Germain_bp, Laurent_bp, Samavarchi_bp)
-ppis_studies_annsolo <- ppis_studies %>% filter(PPI %in% annsolo_bp$PPI)
-
-#	Upset plot ------------------------------------------------------------------------------------------------------------------
-tbl_ppi_upset <- ppis_studies_annsolo %>% unique %>%
-	unnest(cols = Study) %>%
-	mutate(StudyMember=1) %>%
-	pivot_wider(names_from = Study, values_from = StudyMember, values_fill = list(StudyMember = 0)) 
-	
-plot_ppi_upset <- tbl_ppi_upset %>%
-	as.data.frame() %>%
-	UpSetR::upset(
-		order.by = "freq",
-		nsets=8)
-
-pdf(file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Overlap/PPI overlap upsetplot.pdf", width=7, height=5)
-plot_ppi_upset
-dev.off()
-
-#	Phosphorylation sites ------------------------------------------------------------------------------------------------------------
-p_sites <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/PTM/p_sites.txt", header=TRUE)
-
-p_studies <- p_sites %>% as_tibble %>% 
-	select(-proteinAccession) %>%
-	unite(P_site, viralProtein:phosphosite) %>%
-	gather(Study, Member, -P_site) %>%
-	filter(Member) %>%
-	select(-Member) %>% unique()
-
-p_upset <- p_studies %>% mutate(Member=1) %>%
-	pivot_wider(names_from = Study, values_from = Member, values_fill = list(Member = 0)) %>%
-	as.data.frame() %>%
-	UpSetR::upset()
-
-pdf(file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Overlap/phosphorylation site overlap upsetplot.pdf", width=5, height=5)
-p_upset
-dev.off()
-
-#	Ubiquitination sites ------------------------------------------------------------------------------------------------------------
-ub_sites <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Spreadsheets/PTM/ub_sites.txt", header=TRUE)
-ub_sites %>% as_tibble
-ub_studies <- ub_sites %>% as_tibble %>% 
-	select(-proteinAccession) %>%
-	unite(UB_site, viralProtein:ubisite) %>%
-	gather(Study, Member, -UB_site) %>%
-	filter(Member) %>%
-	select(-Member) %>% unique()
-
-ub_upset <- ub_studies %>% mutate(Member=1) %>%
-	pivot_wider(names_from = Study, values_from = Member, values_fill = list(Member = 0)) %>%
-	as.data.frame() %>%
-	UpSetR::upset()
-
-pdf(file="/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Overlap/ubiquitination site overlap upsetplot.pdf", width=5, height=5)
-ub_upset
-dev.off()
-
-########################################################################################################################################
-
-## UPSETPLOT WITH COMPLEX HEATMAP
-
 library(ComplexHeatmap)
 
 #	Load PPI results -----------------------------------------------------------------------------------------------------------------
@@ -116,22 +9,22 @@ list_annsolo <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other 
 	unique()
 list_gordon <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Gordon/gordon_bp.txt", header=FALSE) %>% 
 	as_tibble %>% 
-	filter(V1 %in% list_annsolo) %>%
+	# filter(V1 %in% list_annsolo) %>%
 	pull(V1) %>% 
 	unique()
 list_Li <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Li/Li_bp.txt", header=FALSE) %>% 
 	as_tibble %>% 
-	filter(V1 %in% list_annsolo) %>%
+	# filter(V1 %in% list_annsolo) %>%
 	pull(V1) %>% 
 	unique()
 list_Chen <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Chen/Chen_bp.txt", header=FALSE) %>% 
 	as_tibble %>% 
-	filter(V1 %in% list_annsolo) %>%
+	# filter(V1 %in% list_annsolo) %>%
 	pull(V1) %>% 
 	unique()
 list_Stukalov <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Stukalov/Stukalov_bp.txt", header=FALSE) %>% 
 	as_tibble %>% 
-	filter(V1 %in% list_annsolo) %>%
+	# filter(V1 %in% list_annsolo) %>%
 	pull(V1) %>% 
 	unique()
 list_Germain <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/BioID/Germain/Germain_bp.txt", header=FALSE) %>% 
@@ -146,12 +39,17 @@ list_Laurent <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other 
 	unique()
 list_Samavarchi <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/BioID/Samavarchi/Samavarchi_bp.txt", header=FALSE) %>% 
 	as_tibble %>% 
-	filter(V1 %in% list_annsolo) %>%
+	# filter(V1 %in% list_annsolo) %>%
 	pull(V1) %>% 
 	unique()
 list_Liu <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/Liu/Liu_bp.txt", header=FALSE) %>% 
 	as_tibble %>% 
-	filter(V1 %in% list_annsolo) %>%
+	# filter(V1 %in% list_annsolo) %>%
+	pull(V1) %>% 
+	unique()
+list_Liu_apms <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/Liu/Liu_bp_apms.txt", header=FALSE) %>% 
+	as_tibble %>% 
+	# filter(V1 %in% list_annsolo) %>%
 	pull(V1) %>% 
 	unique()
 
@@ -178,14 +76,23 @@ list_ppi <- list(
 )
 matrix_ppi <- list_to_matrix(list_ppi)
 
+list_ppi <- list(
+	"Original analysis" = list_gordon,
+	"Reanalysis" = list_annsolo,
+	"Li et al." = list_Li, 
+	"Chen et al." = list_Chen,
+	"Stukalov et al." = list_Stukalov,
+	"Liu et al. AP-MS" = list_Liu_apms
+)
+matrix_ppi <- list_to_matrix(list_ppi)
 
 #	Create a combinarion matrix ------------------------------------------------------------------------------------------------------
-matrix_ppi_combination <- make_comb_mat(matrix_ppi, top_n_sets = 3) # mode = "intersect")
+matrix_ppi_combination <- make_comb_mat(matrix_ppi, top_n_sets = 16) # mode = "intersect")
 set_size(matrix_ppi_combination)
 set_name(matrix_ppi_combination)
 matrix_ppi_combination <- matrix_ppi_combination[comb_degree(matrix_ppi_combination) > 0]
 
-pdf(file = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Upset/PPI other studies.pdf", height = 3.4, width = 10)
+pdf(file = "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Figures/Upset/PPI overlap AP-MS.pdf", height = 3.4, width = 10)
 ss = set_size(matrix_ppi_combination)
 cs = comb_size(matrix_ppi_combination)
 ht = UpSet(matrix_ppi_combination, 
@@ -205,8 +112,10 @@ ht = UpSet(matrix_ppi_combination,
 		"Set size" = anno_barplot(-ss, 
 			baseline = 0,
 			axis_param = list(
-				at = c(0, -100, -200, -300),
-				labels = c(0, 100, 200, 300),
+				# at = c(0, -100, -200, -300),
+				# labels = c(0, 100, 200, 300),
+				at = c(0, -7000, -3500),
+				labels = c(0, 7000, 3500),
 				labels_rot = 0),
 			border = FALSE, 
 			gp = gpar(fill = "black"), 
