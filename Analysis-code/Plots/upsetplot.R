@@ -52,6 +52,11 @@ list_Liu_apms <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other
 	# filter(V1 %in% list_annsolo) %>%
 	pull(V1) %>% 
 	unique()
+list_Chen_apms <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Chen/Chen_bp_apms.txt", header=FALSE) %>% 
+	as_tibble %>% 
+	# filter(V1 %in% list_annsolo) %>%
+	pull(V1) %>% 
+	unique()
 
 #
 #	Create a binary matrix -----------------------------------------------------------------------------------------------------------
@@ -80,7 +85,7 @@ list_ppi <- list(
 	"Original analysis" = list_gordon,
 	"Reanalysis" = list_annsolo,
 	"Li et al." = list_Li, 
-	"Chen et al." = list_Chen,
+	"Chen et al. AP-MS" = list_Chen_apms,
 	"Stukalov et al." = list_Stukalov,
 	"Liu et al. AP-MS" = list_Liu_apms
 )
