@@ -147,29 +147,39 @@ Kim %>% count(ViralProtein) %>% arrange(desc(n))
 annsolo_bp %>% print(n=400)
 
 #   Load the Li et al. results
-Li <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/HCIP/AP-MS/Li/Li.txt", sep= "\t") %>% as_tibble
+Li <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Li/Li.txt", sep= "\t") %>% as_tibble
 # Li %>% select(OrganismNameInteractorA, OrganismNameInteractorB) %>% unique
 # Li_sars %>% pull(OfficialSymbolInteractorA) %>% unique
 Li_sars <- Li %>% filter(OrganismNameInteractorB == "Homo sapiens")
 Li_bp <- Li_sars %>% select(OfficialSymbolInteractorA, OfficialSymbolInteractorB) %>% 
 	mutate(OfficialSymbolInteractorA = str_replace(OfficialSymbolInteractorA,"orf14","orf9c(protein14)")) %>%
+	mutate(OfficialSymbolInteractorA = str_replace(OfficialSymbolInteractorA,"ORF","orf")) %>%
 	unite(BP, OfficialSymbolInteractorA:OfficialSymbolInteractorB ,sep ="_", remove=TRUE)
 Li_gn <- Li_sars %>% select(OfficialSymbolInteractorB) %>% unique()
-output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/HCIP/AP-MS/Li/"
+output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Li/"
 fwrite(Li_bp, paste(output_path, "Li_bp.txt", sep=""), col.names = FALSE)
 fwrite(Li_gn, paste(output_path, "Li_gn.txt", sep=""), col.names = FALSE)
 
 #   Load the Chen et al. results
-Chen <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/HCIP/AP-MS/Chen/Chen.txt", sep= "\t") %>% as_tibble
+Chen <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Chen/Chen.txt", sep= "\t") %>% as_tibble
 # Chen %>% select(OrganismNameInteractorA, OrganismNameInteractorB) %>% unique
 # Chen %>% pull(OfficialSymbolInteractorA) %>% unique
-Chen_bp <- Chen %>% select(OfficialSymbolInteractorA, OfficialSymbolInteractorB) %>%
+Chen_bp <- Chen %>% filter(!ExperimentalSystem == "Affinity Capture-Western") %>%
+	select(OfficialSymbolInteractorA, OfficialSymbolInteractorB) %>% 
 	mutate(OfficialSymbolInteractorA = str_replace(OfficialSymbolInteractorA,"orf14","orf9c(protein14)")) %>%
 	unite(BP, OfficialSymbolInteractorA:OfficialSymbolInteractorB ,sep ="_", remove=TRUE)
 Chen_gn <- Chen %>% select(OfficialSymbolInteractorB) %>% unique()
-output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/HCIP/AP-MS/Chen/"
+Chen_bp_apms <- Chen %>% filter(ExperimentalSystem == "Affinity Capture-MS") %>%
+	select(OfficialSymbolInteractorA, OfficialSymbolInteractorB) %>% 
+	mutate(OfficialSymbolInteractorA = str_replace(OfficialSymbolInteractorA,"orf14","orf9c(protein14)")) %>%
+	unite(BP, OfficialSymbolInteractorA:OfficialSymbolInteractorB ,sep ="_", remove=TRUE)
+Chen_gn_apms <- Chen %>% filter(ExperimentalSystem =="Affinity Capture-MS") %>% 
+	select(OfficialSymbolInteractorB) %>% unique()
+output_path <- "/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/Other studies/AP-MS/Chen/"
 fwrite(Chen_bp, paste(output_path, "Chen_bp.txt", sep=""), col.names = FALSE)
 fwrite(Chen_gn, paste(output_path, "Chen_gn.txt", sep=""), col.names = FALSE)
+fwrite(Chen_bp_apms, paste(output_path, "Chen_bp_apms.txt", sep=""), col.names = FALSE)
+fwrite(Chen_gn_apms, paste(output_path, "Chen_gn_apms.txt", sep=""), col.names = FALSE)
 
 #   Load the Stukalov et al. results
 Stukalov <- fread("/Users/adams/Documents/PhD/SARS-CoV-2/Data/Results/HCIP/AP-MS/Stukalov/Stukalov.txt", sep= "\t") %>% as_tibble
