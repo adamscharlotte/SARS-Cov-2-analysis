@@ -55,3 +55,13 @@ do
     IFS=';' read -r -a array <<< "$line"
     time /Users/adams/opt/miniconda3/envs/ann_solo/bin/python3 mztab\ code/plot_ssm.py  "${array[0]}"  "${array[1]}"  "${array[2]}"  "${array[3]}"
 done
+
+#   Add protein coverage
+name_file=/Users/adams/Documents/PhD/SARS-CoV-2/Data/Workspace/names/mztab_names.txt
+lines=`tail -n+1 $name_file`
+for line in $lines
+do
+    IFS=';' read -r -a array <<< "$line"
+    time Rscript Analysis-code/protein_coverage.R "${array[0]}"
+done
+
