@@ -1,5 +1,8 @@
+# install.packages("ggvenn")
+
 library(tidyverse)
 library(data.table)
+library(ggvenn)
 
 spaceless <- function(x) {
     colnames(x) <- gsub(" ", "_", colnames(x))
@@ -32,32 +35,142 @@ tbl_psm_fragger %>%
 
 path_gordon <- "/Users/adams/Projects/SARS-CoV-2/Workspace/20200318-qx-final/msms.txt" # nolint
 tbl_gordon <- fread(path_gordon) %>%
-    as_tibble()
+    as_tibble() %>%
+    spaceless()
 
+# ----------------------------- Prepare Dataframes -----------------------------
 
-# ------------------------------ Plot PSM overlap ------------------------------
+tbl_frame_ann_solo <- tbl_psm_ann_solo %>%
+    separate(Spectrum, into = c("Raw_file", "Scan_number", "scn", "charge"),
+    remove = FALSE) %>%
+    mutate(Scan_number = as.integer(Scan_number)) %>%
+    rename(Modified_sequence = Peptide,
+    Scan_ID = Spectrum) %>%
+    select(Raw_file, Scan_number, Modified_sequence, Scan_ID)
 
-tbl_psm_ann_solo$Peptide_free <- gsub("n.44]", "",
+tbl_frame_ann_solo$Sequence <- gsub("n.44]", "",
     gsub("n.43]", "",
     gsub(".160]", "",
     gsub(".147]", "",
     gsub(".115]", "",
-    gsub(".129]", "", tbl_psm_ann_solo$Peptide))))))
+    gsub(".129]", "", tbl_frame_ann_solo$Modified_sequence))))))
 
-tbl_psm_ann_solo %>%
-    filter(str_detect(Peptide_free, "]")) %>%
-    select(Peptide_free) %>%
+tbl_frame_msfragger <- tbl_psm_fragger %>%
+    separate(Spectrum, into = c("Raw_file", "Scan_number", "scn", "charge"),
+    remove = FALSE) %>%
+    mutate(Scan_number = as.integer(Scan_number)) %>%
+    rename(Sequence = Peptide,
+    Scan_ID = Spectrum) %>%
+    select(Raw_file, Scan_number, Sequence, Scan_ID)
+
+tbl_frame_original <- tbl_gordon %>%
+    select(Raw_file, Scan_number, Sequence, Modified_sequence)
+
+tbl_frame_msfragger %>%
+    arrange(Scan_number) %>%
+    arrange(Raw_file) %>%
+    print(n = 50)
+
+spec_annsolo <- tbl_frame_ann_solo %>%
+    select(Raw_file, Scan_number, Sequence) %>%
+    unite(Spectrum, Raw_file:Scan_number, sep = "|", remove = FALSE) %>%
     distinct()
 
-psm_annsolo <- tbl_psm_ann_solo %>%
-    select(Spectrum, Peptide_free, everything()) %>%
-    unite(PSM, Spectrum:Peptide_free, sep = "|", remove = FALSE) %>%
+spec_fragger <- tbl_frame_msfragger %>%
+    select(Raw_file, Scan_number, Sequence) %>%
+    unite(Spectrum, Raw_file:Scan_number, sep = "|", remove = FALSE) %>%
     distinct()
 
-psm_fragger <- tbl_psm_fragger %>%
-    select(Spectrum, Peptide, everything()) %>%
-    unite(PSM, Spectrum:Peptide, sep = "|", remove = FALSE) %>%
+spec_original <- tbl_frame_original %>%
+    select(Raw_file, Scan_number, Sequence) %>%
+    unite(Spectrum, Raw_file:Scan_number, sep = "|", remove = FALSE) %>%
     distinct()
+
+psm_annsolo <- tbl_frame_ann_solo %>%
+    select(Raw_file, Scan_number, Sequence, Scan_ID) %>%
+    unite(PSM, Raw_file:Sequence, sep = "|", remove = FALSE) %>%
+    distinct()
+
+psm_fragger <- tbl_frame_msfragger %>%
+    select(Raw_file, Scan_number, Sequence, Scan_ID) %>%
+    unite(PSM, Raw_file:Sequence, sep = "|", remove = FALSE) %>%
+    distinct()
+
+psm_original <- tbl_frame_original %>%
+    select(Raw_file, Scan_number, Sequence) %>%
+    unite(PSM, Raw_file:Sequence, sep = "|", remove = FALSE) %>%
+    distinct()
+
+
+# -------------------------------- Venn Diagram --------------------------------
+
+list_venn <- list(
+    ann_solo = psm_annsolo$PSM,
+    msfragger = psm_fragger$PSM,
+    original = psm_original$PSM
+)
+
+complete_venn <- c(psm_annsolo$PSM,
+    psm_fragger$PSM,
+    psm_original$PSM) %>%
+    unique() %>%
+    as_tibble()
+
+ggvenn(list_venn, c("ann_solo", "msfragger", "original"))
+
+psm_fragger %>% filter(PSM %in% psm_original$PSM) %>% distinct()
+
+psm_original
+data_venn <- data.frame(PSM = complete_venn$value,
+    ann_solo = FALSE,
+    msfragger = FALSE,
+    original = FALSE
+    )
+
+data_venn$ann_solo <- data_venn$PSM %in% list_venn$ann_solo
+data_venn$msfragger <- data_venn$PSM %in% list_venn$msfragger
+data_venn$original <- data_venn$PSM %in% list_venn$original
+
+ggplot(data_venn, aes(A = ann_solo, B = msfragger, C = original)) +
+    geom_venn() +
+    theme_void()
+
+# ---------------------------- Plot Spectra overlap ----------------------------
+
+ann <- spec_annsolo %>%
+    filter(!Spectrum %in% spec_fragger$Spectrum) %>%
+    mutate(Identification = "ANN-SoLo") %>%
+    mutate(Level = "Spectrum") %>%
+    unique()
+
+fragger <- spec_fragger %>%
+    filter(!Spectrum %in% spec_annsolo$Spectrum) %>%
+    mutate(Identification = "MSFragger") %>%
+    mutate(Level = "Spectrum") %>%
+    unique()
+
+both <- spec_annsolo %>%
+    filter(Spectrum %in% spec_fragger$Spectrum) %>%
+    mutate(Identification = "Overlap") %>%
+    mutate(Level = "Spectrum") %>%
+    unique()
+
+comb_spec <- rbind(ann, fragger, both)
+comb_spec$Identification <- factor(comb_spec$Identification, levels=c("ANN-SoLo", "Overlap", "MSFragger")) # nolint
+
+plot_spec <- ggplot(comb_spec, aes(Level, fill = Identification)) +
+    geom_bar(position = "stack") +
+    theme_minimal() +
+    labs(title = "Spectrum overlap", x = "", y = "Number of spectra") +
+    scale_fill_manual(values = c("#C0D2F7", "#0E1C36", "#F33B16"), name = "") +
+    scale_y_continuous(labels = scales::comma) +
+    theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+path_plot <- "/Users/adams/Projects/SARS-CoV-2/Results/Figures/Overlap/Spectrum overlap - MSFragger vs ANN-SoLo.png" # nolint
+ggsave(path_plot, plot_spec, width = 7.5, height = 8, units = "cm")
+
+# ------------------------------ Plot PSM overlap ------------------------------
 
 ann <- psm_annsolo %>%
     filter(!PSM %in% psm_fragger$PSM) %>%
@@ -67,7 +180,6 @@ ann <- psm_annsolo %>%
 
 fragger <- psm_fragger %>%
     filter(!PSM %in% psm_annsolo$PSM) %>%
-    select(PSM, Spectrum, Peptide, Delta_Mass) %>%
     mutate(Identification = "MSFragger") %>%
     mutate(Level = "PSM") %>%
     unique()
@@ -92,6 +204,18 @@ plot_psm <- ggplot(comb_psm, aes(Level, fill = Identification)) +
 
 path_plot <- "/Users/adams/Projects/SARS-CoV-2/Results/Figures/Overlap/PSM overlap - MSFragger vs ANN-SoLo.png" # nolint
 ggsave(path_plot, plot_psm, width = 7.5, height = 8, units = "cm")
+
+psm_annsolo %>%
+    filter(Scan_ID %in% psm_fragger$Scan_ID) %>%
+    filter(!PSM %in% psm_fragger$PSM) %>%
+    arrange(Scan_ID) %>%
+    select(Scan_ID, PSM)
+
+psm_fragger %>%
+    filter(Scan_ID %in% psm_annsolo$Scan_ID) %>%
+    filter(!PSM %in% psm_annsolo$PSM) %>%
+    arrange(Scan_ID) %>%
+    select(Scan_ID, PSM)
 
 # ---------- Peptides -----------
 ann <- psm_annsolo %>%
