@@ -1,8 +1,5 @@
-# install.packages("ggvenn")
-
 library(tidyverse)
 library(data.table)
-library(ggvenn)
 
 spaceless <- function(x) {
     colnames(x) <- gsub(" ", "_", colnames(x))
@@ -101,7 +98,6 @@ psm_original <- tbl_frame_original %>%
     unite(PSM, Raw_file:Sequence, sep = "|", remove = FALSE) %>%
     distinct()
 
-
 # -------------------------------- Venn Diagram --------------------------------
 
 list_venn <- list(
@@ -116,11 +112,6 @@ complete_venn <- c(psm_annsolo$PSM,
     unique() %>%
     as_tibble()
 
-ggvenn(list_venn, c("ann_solo", "msfragger", "original"))
-
-psm_fragger %>% filter(PSM %in% psm_original$PSM) %>% distinct()
-
-psm_original
 data_venn <- data.frame(PSM = complete_venn$value,
     ann_solo = FALSE,
     msfragger = FALSE,
@@ -254,46 +245,6 @@ plot_pep <- ggplot(comb_pep, aes(Level, fill = Identification)) +
 
 path_plot <- "/Users/adams/Projects/SARS-CoV-2/Results/Figures/Overlap/Peptide overlap - MSFragger vs ANN-SoLo.png" # nolint
 ggsave(path_plot, plot_pep, width = 7.5, height = 8, units = "cm")
-
-# ------------- Spectra ----------
-
-ann <- psm_annsolo %>%
-    filter(!Spectrum %in% psm_fragger$Spectrum) %>%
-    select(Spectrum, Peptide_free, Delta_Mass) %>%
-    rename(Peptide = Peptide_free) %>%
-    mutate(Identification = "ANN-SoLo") %>%
-    mutate(Level = "Spectrum") %>%
-    unique()
-
-fragger <- psm_fragger %>%
-    filter(!Spectrum %in% psm_annsolo$Spectrum) %>%
-    select(Spectrum, Peptide, Delta_Mass) %>%
-    mutate(Identification = "MSFragger") %>%
-    mutate(Level = "Spectrum") %>%
-    unique()
-
-both <- psm_annsolo %>%
-    filter(Spectrum %in% psm_fragger$Spectrum) %>%
-    select(Spectrum, Peptide_free, Delta_Mass) %>%
-    rename(Peptide = Peptide_free) %>%
-    mutate(Identification = "Overlap") %>%
-    mutate(Level = "Spectrum") %>%
-    unique()
-
-comb_spec <- rbind(ann, fragger, both)
-comb_spec$Identification <- factor(comb_spec$Identification, levels=c("ANN-SoLo", "Overlap", "MSFragger")) # nolint
-
-plot_spec <- ggplot(comb_spec, aes(Level, fill = Identification)) +
-    geom_bar(position = "stack") +
-    theme_minimal() +
-    labs(title = "Spectrum overlap", x = "", y = "Number of spectra") +
-    scale_fill_manual(values = c("#C0D2F7", "#0E1C36", "#F33B16"), name = "") +
-    scale_y_continuous(labels = scales::comma) +
-    theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
-
-path_plot <- "/Users/adams/Projects/SARS-CoV-2/Results/Figures/Overlap/Spectrum overlap - MSFragger vs ANN-SoLo.png" # nolint
-ggsave(path_plot, plot_spec, width = 7.5, height = 8, units = "cm")
 
 # --------- Look at non-matching PSMs --------
 
