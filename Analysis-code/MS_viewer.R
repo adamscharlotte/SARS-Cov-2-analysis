@@ -33,34 +33,16 @@ tbl_result <- tbl_result %>%
 path_ms_viewer <- "/Users/adams/Projects/SARS-CoV-2/Workspace/ANN-SoLo/MS-Viewer.csv" # nolint
 fwrite(tbl_result, path_ms_viewer)
 
+# --------------------------------- MSFragger ----------------------------------
 
-tbl_result_test <- tbl_result %>%
-    filter(fraction == "qx017124.mgf") %>%
-    # filter(fraction == "qx017081.mgf") %>%
-    #  |
-    # fraction == "qx017082.mgf" |
-    # fraction == "qx017084.mgf" |
-    # fraction == "qx017086.mgf" |
-    # fraction == "qx017087.mgf") %>%
-    mutate(scan_number = gsub("controllerType=0 controllerNumber=1 scan=",
-    "", Spec_ID)) %>%
-    select(fraction, Spec_ID, modified_sequence, charge, everything())
+spaceless <- function(x) {
+    colnames(x) <- gsub(" ", "_", colnames(x))
+    x
+    }
 
-path_ms_viewer <- "/Users/adams/Projects/SARS-CoV-2/Workspace/ANN-SoLo/MS-Viewer-test-7.csv" # nolint
-fwrite(tbl_result_test, path_ms_viewer)
+path_fragger <- "/Users/adams/Projects/SARS-CoV-2/Workspace/MSFragger"
+tbl_psm_fragger <- fread(paste(path_fragger, "/psm.tsv", sep = "")) %>%
+    as_tibble() %>%
+    spaceless()
 
-tbl_result_test <- tbl_result %>%
-    filter(fraction == "qx017122"|
-     fraction == "qx017124") %>%
-    # filter(fraction == "qx017081.mgf") %>%
-    #  |
-    # fraction == "qx017082.mgf" |
-    # fraction == "qx017084.mgf" |
-    # fraction == "qx017086.mgf" |
-    # fraction == "qx017087.mgf") %>%
-    mutate(scan_number = gsub("controllerType=0 controllerNumber=1 scan=",
-    "", Spec_ID)) %>%
-    select(fraction, Spec_ID, modified_sequence, charge, everything())
-
-path_ms_viewer <- "/Users/adams/Projects/SARS-CoV-2/Workspace/ANN-SoLo/MS-Viewer-test-10.csv" # nolint
-fwrite(tbl_result_test, path_ms_viewer)
+tbl_psm_fragger %>% select(Assigned_Modifications) %>% distinct()
