@@ -1,5 +1,6 @@
 library(tidyverse)
 library(data.table)
+library(ggvenn)
 
 spaceless <- function(x) {
     colnames(x) <- gsub(" ", "_", colnames(x))
@@ -25,10 +26,11 @@ tbl_psm_fragger <- fread(paste(path_fragger, "/psm.tsv", sep = "")) %>%
     as_tibble() %>%
     spaceless()
 
-tbl_psm_ann_solo %>% filter(Spectrum %in% tbl_psm_fragger$Spectrum)
-tbl_psm_fragger %>%
-    filter(Spectrum %in% tbl_psm_ann_solo$Spectrum) %>%
-    select(Spectrum, Peptide, Delta_Mass)
+# tbl_psm_ann_solo %>%
+    # filter(Spectrum %in% tbl_psm_fragger$Spectrum)
+# tbl_psm_fragger %>%
+#     filter(Spectrum %in% tbl_psm_ann_solo$Spectrum) %>%
+#     select(Spectrum, Peptide, Delta_Mass)
 
 path_gordon <- "/Users/adams/Projects/SARS-CoV-2/Workspace/20200318-qx-final/msms.txt" # nolint
 tbl_gordon <- fread(path_gordon) %>%
@@ -63,39 +65,27 @@ tbl_frame_msfragger <- tbl_psm_fragger %>%
 tbl_frame_original <- tbl_gordon %>%
     select(Raw_file, Scan_number, Sequence, Modified_sequence)
 
-tbl_frame_msfragger %>%
-    arrange(Scan_number) %>%
-    arrange(Raw_file) %>%
-    print(n = 50)
-
-spec_annsolo <- tbl_frame_ann_solo %>%
-    select(Raw_file, Scan_number, Sequence) %>%
-    unite(Spectrum, Raw_file:Scan_number, sep = "|", remove = FALSE) %>%
-    distinct()
-
-spec_fragger <- tbl_frame_msfragger %>%
-    select(Raw_file, Scan_number, Sequence) %>%
-    unite(Spectrum, Raw_file:Scan_number, sep = "|", remove = FALSE) %>%
-    distinct()
-
-spec_original <- tbl_frame_original %>%
-    select(Raw_file, Scan_number, Sequence) %>%
-    unite(Spectrum, Raw_file:Scan_number, sep = "|", remove = FALSE) %>%
-    distinct()
+# tbl_frame_msfragger %>%
+#     arrange(Scan_number) %>%
+#     arrange(Raw_file) %>%
+#     print(n = 50)
 
 psm_annsolo <- tbl_frame_ann_solo %>%
-    select(Raw_file, Scan_number, Sequence, Scan_ID) %>%
-    unite(PSM, Raw_file:Sequence, sep = "|", remove = FALSE) %>%
+    mutate(Sequence_map = gsub("[IL]", "X", Sequence)) %>%
+    select(Raw_file, Scan_number, Sequence_map, Sequence, Scan_ID) %>%
+    unite(PSM, Raw_file:Sequence_map, sep = "|", remove = FALSE) %>%
     distinct()
 
 psm_fragger <- tbl_frame_msfragger %>%
-    select(Raw_file, Scan_number, Sequence, Scan_ID) %>%
-    unite(PSM, Raw_file:Sequence, sep = "|", remove = FALSE) %>%
+    mutate(Sequence_map = gsub("[IL]", "X", Sequence)) %>%
+    select(Raw_file, Scan_number, Sequence_map, Sequence, Scan_ID) %>%
+    unite(PSM, Raw_file:Sequence_map, sep = "|", remove = FALSE) %>%
     distinct()
 
 psm_original <- tbl_frame_original %>%
-    select(Raw_file, Scan_number, Sequence) %>%
-    unite(PSM, Raw_file:Sequence, sep = "|", remove = FALSE) %>%
+    mutate(Sequence_map = gsub("[IL]", "X", Sequence)) %>%
+    select(Raw_file, Scan_number, Sequence_map, Sequence) %>%
+    unite(PSM, Raw_file:Sequence_map, sep = "|", remove = FALSE) %>%
     distinct()
 
 # -------------------------------- Venn Diagram --------------------------------
@@ -126,46 +116,55 @@ ggplot(data_venn, aes(A = ann_solo, B = msfragger, C = original)) +
     geom_venn() +
     theme_void()
 
-# ---------------------------- Plot Spectra overlap ----------------------------
+# ------------------- Plot PSM overlap MSFragger vs Original -------------------
 
-ann <- spec_annsolo %>%
-    filter(!Spectrum %in% spec_fragger$Spectrum) %>%
-    mutate(Identification = "ANN-SoLo") %>%
-    mutate(Level = "Spectrum") %>%
-    unique()
-
-fragger <- spec_fragger %>%
-    filter(!Spectrum %in% spec_annsolo$Spectrum) %>%
+fragger <- psm_fragger %>%
+    filter(!PSM %in% psm_original$PSM) %>%
     mutate(Identification = "MSFragger") %>%
-    mutate(Level = "Spectrum") %>%
+    mutate(Level = "PSM") %>%
     unique()
 
-both <- spec_annsolo %>%
-    filter(Spectrum %in% spec_fragger$Spectrum) %>%
+gordon <- psm_original %>%
+    filter(!PSM %in% psm_fragger$PSM) %>%
+    mutate(Scan_ID = "") %>%
+    mutate(Identification = "Original analysis") %>%
+    mutate(Level = "PSM") %>%
+    unique()
+
+both <- psm_fragger %>%
+    filter(PSM %in% psm_original$PSM) %>%
     mutate(Identification = "Overlap") %>%
-    mutate(Level = "Spectrum") %>%
+    mutate(Level = "PSM") %>%
     unique()
 
-comb_spec <- rbind(ann, fragger, both)
-comb_spec$Identification <- factor(comb_spec$Identification, levels=c("ANN-SoLo", "Overlap", "MSFragger")) # nolint
+317164 / 388342
 
-plot_spec <- ggplot(comb_spec, aes(Level, fill = Identification)) +
+574394 / 388342
+
+830743 / 388342
+
+397308 / 574394
+
+comb_psm <- rbind(fragger, gordon, both)
+comb_psm$Identification <- factor(comb_psm$Identification, levels=c("MSFragger", "Overlap", "Original analysis")) # nolint
+
+plot_psm <- ggplot(comb_psm, aes(Level, fill = Identification)) +
     geom_bar(position = "stack") +
     theme_minimal() +
-    labs(title = "Spectrum overlap", x = "", y = "Number of spectra") +
+    labs(title = "PSM overlap", x = "", y = "Number of PSMs") +
     scale_fill_manual(values = c("#C0D2F7", "#0E1C36", "#F33B16"), name = "") +
     scale_y_continuous(labels = scales::comma) +
     theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
 
-path_plot <- "/Users/adams/Projects/SARS-CoV-2/Results/Figures/Overlap/Spectrum overlap - MSFragger vs ANN-SoLo.png" # nolint
-ggsave(path_plot, plot_spec, width = 7.5, height = 8, units = "cm")
+path_plot <- "/Users/adams/Projects/SARS-CoV-2/Results/Figures/Overlap/PSM overlap - MSFragger vs Original.png" # nolint
+ggsave(path_plot, plot_psm, width = 7.5, height = 8, units = "cm")
 
-# ------------------------------ Plot PSM overlap ------------------------------
+# ------------------- Plot PSM overlap ANN-SoLo vs MSFragger -------------------
 
 ann <- psm_annsolo %>%
     filter(!PSM %in% psm_fragger$PSM) %>%
-    mutate(Identification = "ANN-SoLo") %>%
+    mutate(Identification = "Original annsol") %>%
     mutate(Level = "PSM") %>%
     unique()
 
@@ -182,7 +181,7 @@ both <- psm_annsolo %>%
     unique()
 
 comb_psm <- rbind(ann, fragger, both)
-comb_psm$Identification <- factor(comb_psm$Identification, levels=c("ANN-SoLo", "Overlap", "MSFragger")) # nolint
+comb_psm$Identification <- factor(comb_psm$Identification, levels=c("Original annsol", "Overlap", "MSFragger")) # nolint
 
 plot_psm <- ggplot(comb_psm, aes(Level, fill = Identification)) +
     geom_bar(position = "stack") +
